@@ -17,12 +17,13 @@
 </head>
 <body>
 	<div>
-		<script src="../include_js.php"></script>
+		<script src="../../jquery.js"></script>
+		<script src="../iframeTest.js"></script>
+		<script src="getComputedSupport.js"></script>
 	</div>
 	<script>
-		jQuery(function() {
-			window.parent.supportCallback( jQuery( "body" ).css( "backgroundColor" ), jQuery.support );
-		});
+		startIframeTest( jQuery( "body" ).css( "backgroundColor" ),
+				getComputedSupport( jQuery.support ) );
 	</script>
 </body>
 </html>

@@ -4,18 +4,22 @@
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
 	<title>jQuery selector - sizzle cache</title>
 
-	<script src="../include_js.php"></script>
+	<script src="../../jquery.js"></script>
+	<script src="../iframeTest.js"></script>
 	<script>
-		var $cached = jQuery.noConflict(true);
+		document.write(
+			"<script>var $cached = jQuery.noConflict(true);<\x2Fscript>" +
+			"<script src='" + document.getElementById("jquery-js").src + "?overwrite'><\x2Fscript>"
+		);
 	</script>
-	<script src="../include_js.php"></script>
 
 </head>
 <body>
-
 	<div class="test">
 		<a href="#" id="collision">Worlds collide</a>
 	</div>
-
+	<script>
+		jQuery( startIframeTest );
+	</script>
 </body>
 </html>

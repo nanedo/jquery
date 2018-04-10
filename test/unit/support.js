@@ -1,326 +1,308 @@
-module("support", { teardown: moduleTeardown });
+QUnit.module( "support", { teardown: moduleTeardown } );
 
-function supportIFrameTest( title, url, noDisplay, func ) {
+var computedSupport = getComputedSupport( jQuery.support );
 
-	if ( noDisplay !== true ) {
-		func = noDisplay;
-		noDisplay = false;
+function getComputedSupport( support ) {
+	var prop,
+		result = {};
+
+	for ( prop in support ) {
+		if ( typeof support[ prop ] === "function" ) {
+			result[ prop ] = support[ prop ]();
+		} else {
+			result[ prop ] = support[ prop ];
+		}
 	}
 
-	test( title, function() {
-		var iframe;
-
-		stop();
-		window.supportCallback = function() {
-			var self = this,
-				args = arguments;
-			setTimeout( function() {
-				window.supportCallback = undefined;
-				iframe.remove();
-				func.apply( self, args );
-				start();
-			}, 0 );
-		};
-		iframe = jQuery( "<div/>" ).css( "display", noDisplay ? "none" : "block" ).append(
-				jQuery( "<iframe/>" ).attr( "src", "data/support/" + url + ".html" )
-			).appendTo( "body" );
-	});
+	return result;
 }
 
-supportIFrameTest( "proper boxModel in compatMode CSS1Compat (IE6 and IE7)", "boxModelIE", function( compatMode, boxModel ) {
-	ok( compatMode !== "CSS1Compat" || boxModel, "boxModel properly detected" );
-});
+if ( jQuery.css ) {
+	testIframe(
+		"body background is not lost if set prior to loading jQuery (#9239)",
+		"support/bodyBackground.html",
+		function( assert, jQuery, window, document, color, support ) {
+			assert.expect( 2 );
+			var okValue = {
+				"#000000": true,
+				"rgb(0, 0, 0)": true
+			};
+			assert.ok( okValue[ color ], "color was not reset (" + color + ")" );
 
-supportIFrameTest( "body background is not lost if set prior to loading jQuery (#9238)", "bodyBackground", function( color, support ) {
-	expect( 2 );
-	var i,
-		passed = true,
-		okValue = {
-			"#000000": true,
-			"rgb(0, 0, 0)": true
-		};
-	ok( okValue[ color ], "color was not reset (" + color + ")" );
-
-	for ( i in jQuery.support ) {
-		if ( jQuery.support[ i ] !== support[ i ] ) {
-			passed = false;
-			strictEqual( jQuery.support[ i ], support[ i ], "Support property " + i + " is different" );
+			assert.deepEqual( jQuery.extend( {}, support ), computedSupport,
+				"Same support properties" );
 		}
+	);
+}
+
+// This test checks CSP only for browsers with "Content-Security-Policy" header support
+// i.e. no old WebKit or old Firefox
+testIframe(
+	"Check CSP (https://developer.mozilla.org/en-US/docs/Security/CSP) restrictions",
+	"mock.php?action=cspFrame",
+	function( assert, jQuery, window, document, support ) {
+		var done = assert.async();
+
+		assert.expect( 2 );
+		assert.deepEqual( jQuery.extend( {}, support ), computedSupport,
+			"No violations of CSP polices" );
+
+		supportjQuery.get( baseURL + "support/csp.log" ).done( function( data ) {
+			assert.equal( data, "", "No log request should be sent" );
+			supportjQuery.get( baseURL + "mock.php?action=cspClean" ).done( done );
+		} );
 	}
-	for ( i in support ) {
-		if ( !( i in jQuery.support ) ) {
-			passed = false;
-			strictEqual( jQuery.support[ i ], support[ i ], "Unexpected property: " + i );
-		}
-	}
-	ok( passed, "Same support properties" );
-});
+);
 
-supportIFrameTest( "A background on the testElement does not cause IE8 to crash (#9823)", "testElementCrash", function() {
-	expect(1);
-	ok( true, "IE8 does not crash" );
-});
+( function() {
+	var expected,
+		userAgent = window.navigator.userAgent;
 
-var userAgent = window.navigator.userAgent;
-
-// These tests do not have to stay
-// They are here to help with upcoming support changes for 1.8
-if ( /chrome\/16\.0/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
-		expected = {
-			"leadingWhitespace":true,
-			"tbody":true,
-			"htmlSerialize":true,
-			"style":true,
-			"hrefNormalized":true,
-			"opacity":true,
-			"cssFloat":true,
-			"checkOn":true,
-			"optSelected":true,
-			"getSetAttribute":true,
-			"enctype":true,
-			"html5Clone":true,
-			"submitBubbles":true,
-			"changeBubbles":true,
-			"focusinBubbles":false,
-			"deleteExpando":true,
-			"noCloneEvent":true,
-			"inlineBlockNeedsLayout":false,
-			"shrinkWrapBlocks":false,
-			"reliableMarginRight":true,
-			"noCloneChecked":true,
-			"optDisabled":true,
-			"radioValue":true,
-			"checkClone":true,
-			"appendChecked":true,
-			"boxModel":true,
-			"reliableHiddenOffsets":true,
-			"ajax":true,
-			"cors":true,
-			"doesNotAddBorder":true,
-			"doesAddBorderForTableAndCells":false,
-			"fixedPosition":true,
-			"subtractsBorderForOverflowNotVisible":false,
-			"doesNotIncludeMarginInBodyOffset":true
-		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
-		}
-	});
-} else if ( /msie 8\.0/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
-		expected = {
-			"leadingWhitespace":false,
-			"tbody":true,
-			"htmlSerialize":false,
-			"style":false,
-			"hrefNormalized":true,
-			"opacity":false,
-			"cssFloat":false,
-			"checkOn":true,
-			"optSelected":false,
-			"getSetAttribute":true,
-			"enctype":true,
-			"html5Clone":false,
-			"submitBubbles":false,
-			"changeBubbles":false,
-			"focusinBubbles":true,
-			"deleteExpando":false,
-			"noCloneEvent":false,
-			"inlineBlockNeedsLayout":false,
-			"shrinkWrapBlocks":false,
-			"reliableMarginRight":true,
-			"noCloneChecked":false,
-			"optDisabled":true,
-			"radioValue":false,
-			"checkClone":true,
-			"appendChecked":true,
-			"boxModel":true,
-			"reliableHiddenOffsets":false,
-			"ajax":true,
-			"cors":false,
-			"doesNotAddBorder":false,
-			"doesAddBorderForTableAndCells":true,
-			"fixedPosition":true,
-			"subtractsBorderForOverflowNotVisible":false,
-			"doesNotIncludeMarginInBodyOffset":true
-		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
-		}
-	});
-} else if ( /msie 7\.0/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
+	if ( /edge\//i.test( userAgent ) ) {
 		expected = {
 			"ajax": true,
-			"appendChecked": false,
-			"boxModel": true,
-			"changeBubbles": false,
-			"checkClone": false,
+			"boxSizingReliable": true,
+			"checkClone": true,
 			"checkOn": true,
-			"cors": false,
-			"cssFloat": false,
-			"deleteExpando": false,
-			"doesAddBorderForTableAndCells": true,
-			"doesNotAddBorder": true,
-			"doesNotIncludeMarginInBodyOffset": true,
-			"enctype": true,
-			"fixedPosition": true,
-			"focusinBubbles": true,
-			"getSetAttribute": false,
-			"hrefNormalized": false,
-			"html5Clone": false,
-			"htmlSerialize": false,
-			"inlineBlockNeedsLayout": true,
-			"leadingWhitespace": false,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /(msie 10\.0|trident\/7\.0)/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": false,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": false,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": true,
 			"noCloneChecked": false,
-			"noCloneEvent": false,
-			"opacity": false,
-			"optDisabled": true,
 			"optSelected": false,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
 			"radioValue": false,
-			"reliableHiddenOffsets": false,
-			"reliableMarginRight": true,
-			"shrinkWrapBlocks": false,
-			"submitBubbles": false,
-			"subtractsBorderForOverflowNotVisible": false,
-			"tbody": false,
-			"style": false
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
 		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
-		}
-	});
-} else if ( /msie 6\.0/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
+	} else if ( /msie 9\.0/i.test( userAgent ) ) {
 		expected = {
-			"leadingWhitespace":false,
-			"tbody":false,
-			"htmlSerialize":false,
-			"style":false,
-			"hrefNormalized":false,
-			"opacity":false,
-			"cssFloat":false,
-			"checkOn":true,
-			"optSelected":false,
-			"getSetAttribute":false,
-			"enctype":true,
-			"html5Clone":false,
-			"submitBubbles":false,
-			"changeBubbles":false,
-			"focusinBubbles":true,
-			"deleteExpando":false,
-			"noCloneEvent":false,
-			"inlineBlockNeedsLayout":true,
-			"shrinkWrapBlocks":true,
-			"reliableMarginRight":true,
-			"noCloneChecked":false,
-			"optDisabled":true,
-			"radioValue":false,
-			"checkClone":false,
-			"appendChecked":false,
-			"boxModel":true,
-			"reliableHiddenOffsets":false,
-			"ajax":true,
-			"cors":false,
-			"doesNotAddBorder":true,
-			"doesAddBorderForTableAndCells":true,
-			"fixedPosition":false,
-			"subtractsBorderForOverflowNotVisible":false,
-			"doesNotIncludeMarginInBodyOffset":true
+			"ajax": true,
+			"boxSizingReliable": false,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": false,
+			"cors": false,
+			"createHTMLDocument": true,
+			"focusin": true,
+			"noCloneChecked": false,
+			"optSelected": false,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": false,
+			"reliableMarginLeft": true,
+			"scrollboxSize": "absolute"
 		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
-		}
-	});
-} else if ( /5\.1\.1 safari/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
+	} else if ( /chrome/i.test( userAgent ) ) {
+
+		// Catches Chrome on Android as well (i.e. the default
+		// Android browser on Android >= 4.4).
 		expected = {
-			"leadingWhitespace":true,
-			"tbody":true,
-			"htmlSerialize":true,
-			"style":true,
-			"hrefNormalized":true,
-			"opacity":true,
-			"cssFloat":true,
-			"checkOn":false,
-			"optSelected":true,
-			"getSetAttribute":true,
-			"enctype":true,
-			"html5Clone":true,
-			"submitBubbles":true,
-			"changeBubbles":true,
-			"focusinBubbles":false,
-			"deleteExpando":true,
-			"noCloneEvent":true,
-			"inlineBlockNeedsLayout":false,
-			"shrinkWrapBlocks":false,
-			"reliableMarginRight":true,
-			"noCloneChecked":true,
-			"optDisabled":true,
-			"radioValue":true,
-			"checkClone":true,
-			"appendChecked":true,
-			"boxModel":true,
-			"reliableHiddenOffsets":true,
-			"ajax":true,
-			"cors":true,
-			"doesNotAddBorder":true,
-			"doesAddBorderForTableAndCells":false,
-			"fixedPosition":true,
-			"subtractsBorderForOverflowNotVisible":false,
-			"doesNotIncludeMarginInBodyOffset":true
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
 		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
-		}
-	});
-} else if ( /firefox\/3\.6/i.test(userAgent) ) {
-	test("Verify that the support tests resolve as expected per browser", function() {
-		var i,
+	} else if ( /\b11\.\d(\.\d+)* safari/i.test( userAgent ) ) {
 		expected = {
-			"leadingWhitespace":true,
-			"tbody":true,
-			"htmlSerialize":true,
-			"style":true,
-			"hrefNormalized":true,
-			"opacity":true,
-			"cssFloat":true,
-			"checkOn":true,
-			"optSelected":true,
-			"getSetAttribute":true,
-			"enctype":false,
-			"html5Clone":true,
-			"submitBubbles":true,
-			"changeBubbles":true,
-			"focusinBubbles":false,
-			"deleteExpando":true,
-			"noCloneEvent":true,
-			"inlineBlockNeedsLayout":false,
-			"shrinkWrapBlocks":false,
-			"reliableMarginRight":true,
-			"noCloneChecked":true,
-			"optDisabled":true,
-			"radioValue":true,
-			"checkClone":true,
-			"appendChecked":true,
-			"boxModel":true,
-			"reliableHiddenOffsets":true,
-			"ajax":true,
-			"cors":true,
-			"doesNotAddBorder":true,
-			"doesAddBorderForTableAndCells":true,
-			"fixedPosition":true,
-			"subtractsBorderForOverflowNotVisible":false,
-			"doesNotIncludeMarginInBodyOffset":true
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
 		};
-		for ( i in expected ) {
-			equal( jQuery.support[i], expected[i], "jQuery.support['" + i + "']: " + jQuery.support[i] + ", expected['" + i + "']: " + expected[i]);
+	} else if ( /\b(?:9|10)\.\d(\.\d+)* safari/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": false,
+			"pixelPosition": false,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /firefox/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": true,
+			"reliableMarginLeft": false,
+			"scrollboxSize": true
+		};
+	} else if ( /iphone os 11_/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": true,
+			"pixelPosition": true,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /iphone os (?:9|10)_/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": false,
+			"pixelPosition": false,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /iphone os 8_/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": false,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": false,
+			"pixelPosition": false,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /iphone os 7_/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": true,
+			"checkOn": true,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": false,
+			"pixelPosition": false,
+			"radioValue": true,
+			"reliableMarginLeft": true,
+			"scrollboxSize": true
+		};
+	} else if ( /android 4\.[0-3]/i.test( userAgent ) ) {
+		expected = {
+			"ajax": true,
+			"boxSizingReliable": true,
+			"checkClone": false,
+			"checkOn": false,
+			"clearCloneStyle": true,
+			"cors": true,
+			"createHTMLDocument": true,
+			"focusin": false,
+			"noCloneChecked": true,
+			"optSelected": true,
+			"pixelBoxStyles": false,
+			"pixelPosition": false,
+			"radioValue": true,
+			"reliableMarginLeft": false,
+			"scrollboxSize": true
+		};
+	}
+
+	QUnit.test( "Verify that support tests resolve as expected per browser", function( assert ) {
+		if ( !expected ) {
+			assert.expect( 1 );
+			assert.ok( false, "Known client: " + userAgent );
 		}
-	});
-}
+
+		var i, prop,
+			j = 0;
+
+		for ( prop in computedSupport ) {
+			j++;
+		}
+
+		assert.expect( j );
+
+		for ( i in expected ) {
+			if ( jQuery.ajax || i !== "ajax" && i !== "cors" ) {
+				assert.equal( computedSupport[ i ], expected[ i ],
+					"jQuery.support['" + i + "']: " + computedSupport[ i ] +
+						", expected['" + i + "']: " + expected[ i ] );
+			} else {
+				assert.ok( true, "no ajax; skipping jQuery.support['" + i + "']" );
+			}
+		}
+	} );
+
+} )();

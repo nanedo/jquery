@@ -1,2365 +1,2641 @@
-module("ajax", { teardown: moduleTeardown });
+QUnit.module( "ajax", {
+	teardown: function() {
+		jQuery( document ).off( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxError ajaxSuccess" );
+		moduleTeardown.apply( this, arguments );
+	}
+} );
 
-if ( !isLocal || hasPHP) {
+( function() {
+	QUnit.test( "Unit Testing Environment", function( assert ) {
+		assert.expect( 2 );
 
-test("jQuery.ajax() - success callbacks", function() {
-	expect( 8 );
+		assert.ok( hasPHP, "Running in an environment with PHP support. The AJAX tests only run if the environment supports PHP!" );
+		assert.ok( !isLocal, "Unit tests are not ran from file:// (especially in Chrome. If you must test from file:// with Chrome, run it with the --allow-file-access-from-files flag!)" );
+	} );
 
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	jQuery("#foo").ajaxStart(function(){
-		ok( true, "ajaxStart" );
-	}).ajaxStop(function(){
-		ok( true, "ajaxStop" );
-		start();
-	}).ajaxSend(function(){
-		ok( true, "ajaxSend" );
-	}).ajaxComplete(function(){
-		ok( true, "ajaxComplete" );
-	}).ajaxError(function(){
-		ok( false, "ajaxError" );
-	}).ajaxSuccess(function(){
-		ok( true, "ajaxSuccess" );
-	});
-
-	jQuery.ajax({
-		url: url("data/name.html"),
-		beforeSend: function(){ ok(true, "beforeSend"); },
-		success: function(){ ok(true, "success"); },
-		error: function(){ ok(false, "error"); },
-		complete: function(){ ok(true, "complete"); }
-	});
-});
-
-test("jQuery.ajax() - success callbacks - (url, options) syntax", function() {
-	expect( 8 );
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	setTimeout(function(){
-		jQuery("#foo").ajaxStart(function(){
-			ok( true, "ajaxStart" );
-		}).ajaxStop(function(){
-			ok( true, "ajaxStop" );
-			start();
-		}).ajaxSend(function(){
-			ok( true, "ajaxSend" );
-		}).ajaxComplete(function(){
-			ok( true, "ajaxComplete" );
-		}).ajaxError(function(){
-			ok( false, "ajaxError" );
-		}).ajaxSuccess(function(){
-			ok( true, "ajaxSuccess" );
-		});
-
-		jQuery.ajax( url("data/name.html") , {
-			beforeSend: function(){ ok(true, "beforeSend"); },
-			success: function(){ ok(true, "success"); },
-			error: function(){ ok(false, "error"); },
-			complete: function(){ ok(true, "complete"); }
-		});
-	}, 13);
-});
-
-test("jQuery.ajax() - success callbacks (late binding)", function() {
-	expect( 8 );
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	setTimeout(function(){
-		jQuery("#foo").ajaxStart(function(){
-			ok( true, "ajaxStart" );
-		}).ajaxStop(function(){
-			ok( true, "ajaxStop" );
-			start();
-		}).ajaxSend(function(){
-			ok( true, "ajaxSend" );
-		}).ajaxComplete(function(){
-			ok( true, "ajaxComplete" );
-		}).ajaxError(function(){
-			ok( false, "ajaxError" );
-		}).ajaxSuccess(function(){
-			ok( true, "ajaxSuccess" );
-		});
-
-		jQuery.ajax({
-			url: url("data/name.html"),
-			beforeSend: function(){ ok(true, "beforeSend"); }
-		})
-			.complete(function(){ ok(true, "complete"); })
-			.success(function(){ ok(true, "success"); })
-			.error(function(){ ok(false, "error"); });
-	}, 13);
-});
-
-test("jQuery.ajax() - success callbacks (oncomplete binding)", function() {
-	expect( 8 );
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	setTimeout(function(){
-		jQuery("#foo").ajaxStart(function(){
-			ok( true, "ajaxStart" );
-		}).ajaxStop(function(){
-			ok( true, "ajaxStop" );
-		}).ajaxSend(function(){
-			ok( true, "ajaxSend" );
-		}).ajaxComplete(function(){
-			ok( true, "ajaxComplete" );
-		}).ajaxError(function(){
-			ok( false, "ajaxError" );
-		}).ajaxSuccess(function(){
-			ok( true, "ajaxSuccess" );
-		});
-
-		jQuery.ajax({
-			url: url("data/name.html"),
-			beforeSend: function(){ ok(true, "beforeSend"); },
-			complete: function(xhr) {
-				xhr
-				.complete(function(){ ok(true, "complete"); })
-				.success(function(){ ok(true, "success"); })
-				.error(function(){ ok(false, "error"); })
-				.complete(function(){ start(); });
-			}
-		});
-	}, 13);
-});
-
-test("jQuery.ajax() - success callbacks (very late binding)", function() {
-	expect( 8 );
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	setTimeout(function(){
-		jQuery("#foo").ajaxStart(function(){
-			ok( true, "ajaxStart" );
-		}).ajaxStop(function(){
-			ok( true, "ajaxStop" );
-		}).ajaxSend(function(){
-			ok( true, "ajaxSend" );
-		}).ajaxComplete(function(){
-			ok( true, "ajaxComplete" );
-		}).ajaxError(function(){
-			ok( false, "ajaxError" );
-		}).ajaxSuccess(function(){
-			ok( true, "ajaxSuccess" );
-		});
-
-		jQuery.ajax({
-			url: url("data/name.html"),
-			beforeSend: function(){ ok(true, "beforeSend"); },
-			complete: function(xhr) {
-				setTimeout (function() {
-					xhr
-					.complete(function(){ ok(true, "complete"); })
-					.success(function(){ ok(true, "success"); })
-					.error(function(){ ok(false, "error"); })
-					.complete(function(){ start(); });
-				},100);
-			}
-		});
-	}, 13);
-});
-
-test("jQuery.ajax() - success callbacks (order)", function() {
-	expect( 1 );
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	stop();
-
-	var testString = "";
-
-	setTimeout(function(){
-		jQuery.ajax({
-			url: url("data/name.html"),
-			success: function( _1 , _2 , xhr ) {
-				xhr.success(function() {
-					xhr.success(function() {
-						testString += "E";
-					});
-					testString += "D";
-				});
-				testString += "A";
-			},
-			complete: function() {
-				strictEqual(testString, "ABCDE", "Proper order");
-				start();
-			}
-		}).success(function() {
-			testString += "B";
-		}).success(function() {
-			testString += "C";
-		});
-	}, 13);
-});
-
-test("jQuery.ajax() - error callbacks", function() {
-	expect( 8 );
-	stop();
-
-	jQuery("#foo").ajaxStart(function(){
-		ok( true, "ajaxStart" );
-	}).ajaxStop(function(){
-		ok( true, "ajaxStop" );
-		start();
-	}).ajaxSend(function(){
-		ok( true, "ajaxSend" );
-	}).ajaxComplete(function(){
-		ok( true, "ajaxComplete" );
-	}).ajaxError(function(){
-		ok( true, "ajaxError" );
-	}).ajaxSuccess(function(){
-		ok( false, "ajaxSuccess" );
-	});
-
-	jQuery.ajaxSetup({ timeout: 500 });
-
-	jQuery.ajax({
-		url: url("data/name.php?wait=5"),
-		beforeSend: function(){ ok(true, "beforeSend"); },
-		success: function(){ ok(false, "success"); },
-		error: function(){ ok(true, "error"); },
-		complete: function(){ ok(true, "complete"); }
-	});
-});
-
-test( "jQuery.ajax - multiple method signatures introduced in 1.5 ( #8107)", function() {
-
-	expect( 4 );
-
-	stop();
-
-	jQuery.when(
-		jQuery.ajax().success(function() { ok( true, "With no arguments" ); }),
-		jQuery.ajax("data/name.html").success(function() { ok( true, "With only string URL argument" ); }),
-		jQuery.ajax("data/name.html", {} ).success(function() { ok( true, "With string URL param and map" ); }),
-		jQuery.ajax({ url: "data/name.html"} ).success(function() { ok( true, "With only map" ); })
-	).always(function() {
-		start();
-	});
-
-});
-
-test("jQuery.ajax() - textStatus and errorThrown values", function() {
-
-	var nb = 2;
-
-	expect( 2 * nb );
-	stop();
-
-	function startN() {
-		if ( !( --nb ) ) {
-			start();
-		}
+	if ( !jQuery.ajax || ( isLocal && !hasPHP ) ) {
+		return;
 	}
 
-	/*
-	Safari 3.x returns "OK" instead of "Not Found"
-	Safari 4.x doesn't have this issue so the test should be re-instated once
-	we drop support for 3.x
-
-	jQuery.ajax({
-		url: url("data/nonExistingURL"),
-		error: function( _ , textStatus , errorThrown ){
-			strictEqual( textStatus, "error", "textStatus is 'error' for 404" );
-			strictEqual( errorThrown, "Not Found", "errorThrown is 'Not Found' for 404");
-			startN();
-		}
-	});
-	*/
-
-	jQuery.ajax({
-		url: url("data/name.php?wait=5"),
-		error: function( _ , textStatus , errorThrown ){
-			strictEqual( textStatus, "abort", "textStatus is 'abort' for abort" );
-			strictEqual( errorThrown, "abort", "errorThrown is 'abort' for abort");
-			startN();
-		}
-	}).abort();
-
-	jQuery.ajax({
-		url: url("data/name.php?wait=5"),
-		error: function( _ , textStatus , errorThrown ){
-			strictEqual( textStatus, "mystatus", "textStatus is 'mystatus' for abort('mystatus')" );
-			strictEqual( errorThrown, "mystatus", "errorThrown is 'mystatus' for abort('mystatus')");
-			startN();
-		}
-	}).abort( "mystatus" );
-});
-
-test("jQuery.ajax() - responseText on error", function() {
-
-	expect( 1 );
-
-	stop();
-
-	jQuery.ajax({
-		url: url("data/errorWithText.php"),
-		error: function(xhr) {
-			strictEqual( xhr.responseText , "plain text message" , "Test jqXHR.responseText is filled for HTTP errors" );
-		},
-		complete: function() {
-			start();
-		}
-	});
-});
-
-test(".ajax() - retry with jQuery.ajax( this )", function() {
-
-	expect( 2 );
-
-	stop();
-
-	var firstTime = true,
-		previousUrl;
-
-	jQuery.ajax({
-		url: url("data/errorWithText.php"),
-		error: function() {
-			if ( firstTime ) {
-				firstTime = false;
-				jQuery.ajax( this );
-			} else {
-				ok( true , "Test retrying with jQuery.ajax(this) works" );
-				jQuery.ajax({
-					url: url("data/errorWithText.php"),
-					data: { x: 1 },
-					beforeSend: function() {
-						if ( !previousUrl ) {
-							previousUrl = this.url;
-						} else {
-							strictEqual( this.url , previousUrl, "url parameters are not re-appended" );
-							start();
-							return false;
-						}
-					},
-					error: function() {
-						jQuery.ajax( this );
-					}
-				});
-			}
-		}
-	});
-});
-
-test(".ajax() - headers" , function() {
-
-	expect( 4 );
-
-	stop();
-
-	jQuery("#foo").ajaxSend(function( evt, xhr ) {
-		xhr.setRequestHeader( "ajax-send", "test" );
-	});
-
-	var requestHeaders = {
-			siMPle: "value",
-			"SometHing-elsE": "other value",
-			OthEr: "something else"
-		},
-		list = [],
-		i;
-
-	for( i in requestHeaders ) {
-		list.push( i );
-	}
-	list.push( "ajax-send" );
-
-	jQuery.ajax(url("data/headers.php?keys="+list.join( "_" ) ), {
-
-		headers: requestHeaders,
-		success: function( data , _ , xhr ) {
-			var tmp = [];
-			for ( i in requestHeaders ) {
-				tmp.push( i , ": " , requestHeaders[ i ] , "\n" );
-			}
-			tmp.push(  "ajax-send: test\n" );
-			tmp = tmp.join( "" );
-
-			strictEqual( data , tmp , "Headers were sent" );
-			strictEqual( xhr.getResponseHeader( "Sample-Header" ) , "Hello World" , "Sample header received" );
-			if ( jQuery.browser.mozilla ) {
-				ok( true, "Firefox doesn't support empty headers" );
-			} else {
-				strictEqual( xhr.getResponseHeader( "Empty-Header" ) , "" , "Empty header received" );
-			}
-			strictEqual( xhr.getResponseHeader( "Sample-Header2" ) , "Hello World 2" , "Second sample header received" );
-		},
-		error: function(){ ok(false, "error"); }
-
-	}).always(function() {
-		start();
-	});
-
-});
-
-test(".ajax() - Accept header" , function() {
-
-	expect( 1 );
-
-	stop();
-
-	jQuery.ajax(url("data/headers.php?keys=accept"), {
-		headers: {
-			Accept: "very wrong accept value"
-		},
-		beforeSend: function( xhr ) {
-			xhr.setRequestHeader( "Accept", "*/*" );
-		},
-		success: function( data ) {
-			strictEqual( data , "accept: */*\n" , "Test Accept header is set to last value provided" );
-			start();
-		},
-		error: function(){ ok(false, "error"); }
-	});
-
-});
-
-test(".ajax() - contentType" , function() {
-
-	expect( 2 );
-
-	stop();
-
-	var count = 2;
-
-	function restart() {
-		if ( ! --count ) {
-			start();
-		}
-	}
-
-	jQuery.ajax(url("data/headers.php?keys=content-type" ), {
-		contentType: "test",
-		success: function( data ) {
-			strictEqual( data , "content-type: test\n" , "Test content-type is sent when options.contentType is set" );
-		},
-		complete: function() {
-			restart();
-		}
-	});
-
-	jQuery.ajax(url("data/headers.php?keys=content-type" ), {
-		contentType: false,
-		success: function( data ) {
-			strictEqual( data , "content-type: \n" , "Test content-type is not sent when options.contentType===false" );
-		},
-		complete: function() {
-			restart();
-		}
-	});
-
-});
-
-test(".ajax() - protocol-less urls", function() {
-	expect(1);
-
-	jQuery.ajax({
-		url: "//somedomain.com",
-		beforeSend: function( xhr, settings ) {
-			equal(settings.url, location.protocol + "//somedomain.com", "Make sure that the protocol is added.");
-			return false;
-		}
-	});
-});
-
-test(".ajax() - hash", function() {
-	expect(3);
-
-	jQuery.ajax({
-		url: "data/name.html#foo",
-		beforeSend: function( xhr, settings ) {
-			equal(settings.url, "data/name.html", "Make sure that the URL is trimmed.");
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		url: "data/name.html?abc#foo",
-		beforeSend: function( xhr, settings ) {
-		equal(settings.url, "data/name.html?abc", "Make sure that the URL is trimmed.");
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		url: "data/name.html?abc#foo",
-		data: { "test": 123 },
-		beforeSend: function( xhr, settings ) {
-			equal(settings.url, "data/name.html?abc&test=123", "Make sure that the URL is trimmed.");
-			return false;
-		}
-	});
-});
-
-test("jQuery ajax - cross-domain detection", function() {
-
-	expect( 6 );
-
-	var loc = document.location,
-		otherPort = loc.port === 666 ? 667 : 666,
-		otherProtocol = loc.protocol === "http:" ? "https:" : "http:";
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: otherProtocol + "//" + loc.host,
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Test different protocols are detected as cross-domain" );
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: "app:/path",
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Adobe AIR app:/ URL detected as cross-domain" );
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: loc.protocol + "//somewebsitethatdoesnotexist-656329477541.com:" + ( loc.port || 80 ),
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Test different hostnames are detected as cross-domain" );
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: loc.protocol + "//" + loc.hostname + ":" + otherPort,
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Test different ports are detected as cross-domain" );
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: "about:blank",
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Test about:blank is detected as cross-domain" );
-			return false;
-		}
-	});
-
-	jQuery.ajax({
-		dataType: "jsonp",
-		url: loc.protocol + "//" + loc.host,
-		crossDomain: true,
-		beforeSend: function( _ , s ) {
-			ok( s.crossDomain , "Test forced crossDomain is detected as cross-domain" );
-			return false;
-		}
-	});
-
-});
-
-test(".load() - 404 error callbacks", function() {
-	expect( 6 );
-	stop();
-
-	jQuery("#foo").ajaxStart(function(){
-		ok( true, "ajaxStart" );
-	}).ajaxStop(function(){
-		ok( true, "ajaxStop" );
-		start();
-	}).ajaxSend(function(){
-		ok( true, "ajaxSend" );
-	}).ajaxComplete(function(){
-		ok( true, "ajaxComplete" );
-	}).ajaxError(function(){
-		ok( true, "ajaxError" );
-	}).ajaxSuccess(function(){
-		ok( false, "ajaxSuccess" );
-	});
-
-	jQuery("<div/>").load("data/404.html", function(){
-		ok(true, "complete");
-	});
-});
-
-test("jQuery.ajax() - abort", function() {
-	expect( 8 );
-	stop();
-
-	jQuery("#foo").ajaxStart(function(){
-		ok( true, "ajaxStart" );
-	}).ajaxStop(function(){
-		ok( true, "ajaxStop" );
-		start();
-	}).ajaxSend(function(){
-		ok( true, "ajaxSend" );
-	}).ajaxComplete(function(){
-		ok( true, "ajaxComplete" );
-	});
-
-	var xhr = jQuery.ajax({
-		url: url("data/name.php?wait=5"),
-		beforeSend: function(){ ok(true, "beforeSend"); },
-		complete: function(){ ok(true, "complete"); }
-	});
-
-	equal( xhr.readyState, 1, "XHR readyState indicates successful dispatch" );
-
-	xhr.abort();
-	equal( xhr.readyState, 0, "XHR readyState indicates successful abortion" );
-});
-
-test("Ajax events with context", function() {
-	expect(14);
-
-	stop();
-	var context = document.createElement("div");
-
-	function event(e){
-		equal( this, context, e.type );
-	}
-
-	function callback(msg){
-		return function(){
-			equal( this, context, "context is preserved on callback " + msg );
+	function addGlobalEvents( expected, assert ) {
+		return function() {
+			expected = expected || "";
+			jQuery( document ).on( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxError ajaxSuccess", function( e ) {
+				assert.ok( expected.indexOf( e.type ) !== -1, e.type );
+			} );
 		};
 	}
 
-	function nocallback(msg){
-		return function(){
-			equal( typeof this.url, "string", "context is settings on callback " + msg );
-		};
-	}
+//----------- jQuery.ajax()
 
-	jQuery("#foo").add(context)
-			.ajaxSend(event)
-			.ajaxComplete(event)
-			.ajaxError(event)
-			.ajaxSuccess(event);
-
-	jQuery.ajax({
-		url: url("data/name.html"),
-		beforeSend: callback("beforeSend"),
-		success: callback("success"),
-		error: callback("error"),
-		complete:function(){
-			callback("complete").call(this);
-
-			jQuery.ajax({
-				url: url("data/404.html"),
-				context: context,
-				beforeSend: callback("beforeSend"),
-				error: callback("error"),
-				complete: function(){
-					callback("complete").call(this);
-
-					jQuery("#foo").add(context).unbind();
-
-					jQuery.ajax({
-						url: url("data/404.html"),
-						beforeSend: nocallback("beforeSend"),
-						error: nocallback("error"),
-						complete: function(){
-							nocallback("complete").call(this);
-							start();
-						}
-					});
-				}
-			});
-		},
-		context:context
-	});
-});
-
-test("jQuery.ajax context modification", function() {
-	expect(1);
-
-	stop();
-
-	var obj = {};
-
-	jQuery.ajax({
-		url: url("data/name.html"),
-		context: obj,
-		beforeSend: function(){
-			this.test = "foo";
-		},
-		complete: function() {
-			start();
+	testIframe(
+		"XMLHttpRequest - Attempt to block tests because of dangling XHR requests (IE)",
+		"ajax/unreleasedXHR.html",
+		function( assert ) {
+			assert.expect( 1 );
+			assert.ok( true, "done" );
 		}
-	});
-
-	equal( obj.test, "foo", "Make sure the original object is maintained." );
-});
-
-test("jQuery.ajax context modification through ajaxSetup", function() {
-	expect(4);
-
-	stop();
-
-	var obj = {};
-
-	jQuery.ajaxSetup({
-		context: obj
-	});
-
-	strictEqual( jQuery.ajaxSettings.context, obj, "Make sure the context is properly set in ajaxSettings." );
-
-	jQuery.ajax({
-		url: url("data/name.html"),
-		complete: function() {
-			strictEqual( this, obj, "Make sure the original object is maintained." );
-			jQuery.ajax({
-				url: url("data/name.html"),
-				context: {},
-				complete: function() {
-					ok( this !== obj, "Make sure overidding context is possible." );
-					jQuery.ajaxSetup({
-						context: false
-					});
-					jQuery.ajax({
-						url: url("data/name.html"),
-						beforeSend: function(){
-							this.test = "foo2";
-						},
-						complete: function() {
-							ok( this !== obj, "Make sure unsetting context is possible." );
-							start();
-						}
-					});
-				}
-			});
-		}
-	});
-});
-
-test("jQuery.ajax() - disabled globals", function() {
-	expect( 3 );
-	stop();
-
-	jQuery("#foo").ajaxStart(function(){
-		ok( false, "ajaxStart" );
-	}).ajaxStop(function(){
-		ok( false, "ajaxStop" );
-	}).ajaxSend(function(){
-		ok( false, "ajaxSend" );
-	}).ajaxComplete(function(){
-		ok( false, "ajaxComplete" );
-	}).ajaxError(function(){
-		ok( false, "ajaxError" );
-	}).ajaxSuccess(function(){
-		ok( false, "ajaxSuccess" );
-	});
-
-	jQuery.ajax({
-		global: false,
-		url: url("data/name.html"),
-		beforeSend: function(){ ok(true, "beforeSend"); },
-		success: function(){ ok(true, "success"); },
-		error: function(){ ok(false, "error"); },
-		complete: function(){
-		  ok(true, "complete");
-		  setTimeout(function(){ start(); }, 13);
-		}
-	});
-});
-
-test("jQuery.ajax - xml: non-namespace elements inside namespaced elements", function() {
-	expect(3);
-	stop();
-	jQuery.ajax({
-	  url: url("data/with_fries.xml"),
-	  dataType: "xml",
-	  success: function(resp) {
-		equal( jQuery("properties", resp).length, 1, "properties in responseXML" );
-		equal( jQuery("jsconf", resp).length, 1, "jsconf in responseXML" );
-		equal( jQuery("thing", resp).length, 2, "things in responseXML" );
-		start();
-	  }
-	});
-});
-
-test("jQuery.ajax - xml: non-namespace elements inside namespaced elements (over JSONP)", function() {
-	expect(3);
-	stop();
-	jQuery.ajax({
-	  url: url("data/with_fries_over_jsonp.php"),
-	  dataType: "jsonp xml",
-	  success: function(resp) {
-		equal( jQuery("properties", resp).length, 1, "properties in responseXML" );
-		equal( jQuery("jsconf", resp).length, 1, "jsconf in responseXML" );
-		equal( jQuery("thing", resp).length, 2, "things in responseXML" );
-		start();
-	  },
-	  error: function(_1,_2,error) {
-		ok( false, error );
-		start();
-	  }
-	});
-});
-
-test("jQuery.ajax - HEAD requests", function() {
-	expect(2);
-
-	stop();
-	jQuery.ajax({
-		url: url("data/name.html"),
-		type: "HEAD",
-		success: function(data, status, xhr){
-			var h = xhr.getAllResponseHeaders();
-			ok( /Date/i.test(h), "No Date in HEAD response" );
-
-			jQuery.ajax({
-				url: url("data/name.html"),
-				data: { whip_it: "good" },
-				type: "HEAD",
-				success: function(data, status, xhr){
-					var h = xhr.getAllResponseHeaders();
-					ok( /Date/i.test(h), "No Date in HEAD response with data" );
-					start();
-				}
-			});
-		}
-	});
-
-});
-
-test("jQuery.ajax - beforeSend", function() {
-	expect(1);
-	stop();
-
-	var check = false;
-
-	jQuery.ajaxSetup({ timeout: 0 });
-
-	jQuery.ajax({
-		url: url("data/name.html"),
-		beforeSend: function(xml) {
-			check = true;
-		},
-		success: function(data) {
-			ok( check, "check beforeSend was executed" );
-			start();
-		}
-	});
-});
-
-test("jQuery.ajax - beforeSend, cancel request (#2688)", function() {
-	expect(2);
-	var request = jQuery.ajax({
-		url: url("data/name.html"),
-		beforeSend: function() {
-			ok( true, "beforeSend got called, canceling" );
-			return false;
-		},
-		success: function() {
-			ok( false, "request didn't get canceled" );
-		},
-		complete: function() {
-			ok( false, "request didn't get canceled" );
-		},
-		error: function() {
-			ok( false, "request didn't get canceled" );
-		}
-	});
-	ok( request === false, "canceled request must return false instead of XMLHttpRequest instance" );
-});
-
-test("jQuery.ajax - beforeSend, cancel request manually", function() {
-	expect(2);
-	var request = jQuery.ajax({
-		url: url("data/name.html"),
-		beforeSend: function(xhr) {
-			ok( true, "beforeSend got called, canceling" );
-			xhr.abort();
-		},
-		success: function() {
-			ok( false, "request didn't get canceled" );
-		},
-		complete: function() {
-			ok( false, "request didn't get canceled" );
-		},
-		error: function() {
-			ok( false, "request didn't get canceled" );
-		}
-	});
-	ok( request === false, "canceled request must return false instead of XMLHttpRequest instance" );
-});
-
-window.foobar = null;
-window.testFoo = undefined;
-
-test("jQuery.ajax - dataType html", function() {
-	expect(5);
-	stop();
-
-	var verifyEvaluation = function() {
-		equal( testFoo, "foo", "Check if script was evaluated for datatype html" );
-		equal( foobar, "bar", "Check if script src was evaluated for datatype html" );
-
-		start();
-	};
-
-	jQuery.ajax({
-	  dataType: "html",
-	  url: url("data/test.html"),
-	  success: function(data) {
-		jQuery("#ap").html(data);
-		ok( data.match(/^html text/), "Check content for datatype html" );
-		setTimeout(verifyEvaluation, 600);
-	  }
-	});
-});
-
-test("serialize()", function() {
-	expect(5);
-
-	// Add html5 elements only for serialize because selector can't yet find them on non-html5 browsers
-	jQuery("#search").after(
-		"<input type='email' id='html5email' name='email' value='dave@jquery.com' />"+
-		"<input type='number' id='html5number' name='number' value='43' />"
 	);
 
-	equal( jQuery("#form").serialize(),
-		"action=Test&radio2=on&check=on&hidden=&foo%5Bbar%5D=&name=name&search=search&email=dave%40jquery.com&number=43&select1=&select2=3&select3=1&select3=2&select5=3",
-		"Check form serialization as query string");
+	ajaxTest( "jQuery.ajax() - success callbacks", 8, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxSuccess", assert ),
+			url: url( "name.html" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			success: function() {
+				assert.ok( true, "success" );
+			},
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
 
-	equal( jQuery("#form :input").serialize(),
-		"action=Test&radio2=on&check=on&hidden=&foo%5Bbar%5D=&name=name&search=search&email=dave%40jquery.com&number=43&select1=&select2=3&select3=1&select3=2&select5=3",
-		"Check input serialization as query string");
+	ajaxTest( "jQuery.ajax() - success callbacks - (url, options) syntax", 8, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxSuccess", assert ),
+			create: function( options ) {
+				return jQuery.ajax( url( "name.html" ), options );
+			},
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			success: function() {
+				assert.ok( true, "success" );
+			},
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
 
-	equal( jQuery("#testForm").serialize(),
-		"T3=%3F%0D%0AZ&H1=x&H2=&PWD=&T1=&T2=YES&My+Name=me&S1=abc&S3=YES&S4=",
-		"Check form serialization as query string");
+	ajaxTest( "jQuery.ajax() - execute js for crossOrigin when dataType option is provided", 3,
+		function( assert ) {
+			return {
+				create: function( options ) {
+					options.crossDomain = true;
+					options.dataType = "script";
+					return jQuery.ajax( url( "mock.php?action=script&header=ecma" ), options );
+				},
+				success: function() {
+					assert.ok( true, "success" );
+				},
+				complete: function() {
+					assert.ok( true, "complete" );
+				}
+			};
+		}
+	);
 
-	equal( jQuery("#testForm :input").serialize(),
-		"T3=%3F%0D%0AZ&H1=x&H2=&PWD=&T1=&T2=YES&My+Name=me&S1=abc&S3=YES&S4=",
-		"Check input serialization as query string");
+	ajaxTest( "jQuery.ajax() - do not execute js (crossOrigin)", 2, function( assert ) {
+		return {
+			create: function( options ) {
+				options.crossDomain = true;
+				return jQuery.ajax( url( "mock.php?action=script" ), options );
+			},
+			success: function() {
+				assert.ok( true, "success" );
+			},
+			fail: function() {
+				if ( jQuery.support.cors === false ) {
+					assert.ok( true, "fail" );
+				}
+			},
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
 
-	equal( jQuery("#form, #testForm").serialize(),
-		"action=Test&radio2=on&check=on&hidden=&foo%5Bbar%5D=&name=name&search=search&email=dave%40jquery.com&number=43&select1=&select2=3&select3=1&select3=2&select5=3&T3=%3F%0D%0AZ&H1=x&H2=&PWD=&T1=&T2=YES&My+Name=me&S1=abc&S3=YES&S4=",
-		"Multiple form serialization as query string");
+	ajaxTest( "jQuery.ajax() - success callbacks (late binding)", 8, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxSuccess", assert ),
+			url: url( "name.html" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			success: true,
+			afterSend: function( request ) {
+				request.always( function() {
+					assert.ok( true, "complete" );
+				} ).done( function() {
+					assert.ok( true, "success" );
+				} ).fail( function() {
+					assert.ok( false, "error" );
+				} );
+			}
+		};
+	} );
 
-  /* Temporarily disabled. Opera 10 has problems with form serialization.
-	equal( jQuery("#form, #testForm :input").serialize(),
-		"action=Test&radio2=on&check=on&hidden=&foo%5Bbar%5D=&name=name&search=search&email=dave%40jquery.com&number=43&select1=&select2=3&select3=1&select3=2&T3=%3F%0D%0AZ&H1=x&H2=&PWD=&T1=&T2=YES&My+Name=me&S1=abc&S3=YES&S4=",
-		"Mixed form/input serialization as query string");
-	*/
-	jQuery("#html5email, #html5number").remove();
-});
+	ajaxTest( "jQuery.ajax() - success callbacks (oncomplete binding)", 8, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxSuccess", assert ),
+			url: url( "name.html" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			success: true,
+			complete: function( xhr ) {
+				xhr.always( function() {
+					assert.ok( true, "complete" );
+				} ).done( function() {
+					assert.ok( true, "success" );
+				} ).fail( function() {
+					assert.ok( false, "error" );
+				} );
+			}
+		};
+	} );
 
-test("jQuery.param()", function() {
-	expect(21);
+	ajaxTest( "jQuery.ajax() - error callbacks", 8, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxError", assert ),
+			url: url( "mock.php?action=wait&wait=5" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			afterSend: function( request ) {
+				request.abort();
+			},
+			error: function() {
+				assert.ok( true, "error" );
+			},
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
 
-	equal( !jQuery.ajaxSettings.traditional, true, "traditional flag, falsy by default" );
+	ajaxTest( "jQuery.ajax() - textStatus and errorThrown values", 4, function( assert ) {
+		return [ {
+			url: url( "mock.php?action=wait&wait=5" ),
+			error: function( _, textStatus, errorThrown ) {
+				assert.strictEqual( textStatus, "abort", "textStatus is 'abort' for abort" );
+				assert.strictEqual( errorThrown, "abort", "errorThrown is 'abort' for abort" );
+			},
+			afterSend: function( request ) {
+				request.abort();
+			}
+		},
+		{
+			url: url( "mock.php?action=wait&wait=5" ),
+			error: function( _, textStatus, errorThrown ) {
+				assert.strictEqual( textStatus, "mystatus", "textStatus is 'mystatus' for abort('mystatus')" );
+				assert.strictEqual( errorThrown, "mystatus", "errorThrown is 'mystatus' for abort('mystatus')" );
+			},
+			afterSend: function( request ) {
+				request.abort( "mystatus" );
+			}
+		} ];
+	} );
 
-	var params = {foo:"bar", baz:42, quux:"All your base are belong to us"};
-	equal( jQuery.param(params), "foo=bar&baz=42&quux=All+your+base+are+belong+to+us", "simple" );
+	ajaxTest( "jQuery.ajax() - responseText on error", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=error" ),
+			error: function( xhr ) {
+				assert.strictEqual( xhr.responseText, "plain text message", "Test jqXHR.responseText is filled for HTTP errors" );
+			}
+		};
+	} );
 
-	params = {someName: [1, 2, 3], regularThing: "blah" };
-	equal( jQuery.param(params), "someName%5B%5D=1&someName%5B%5D=2&someName%5B%5D=3&regularThing=blah", "with array" );
+	QUnit.asyncTest( "jQuery.ajax() - retry with jQuery.ajax( this )", 2, function( assert ) {
+		var previousUrl,
+			firstTime = true;
+		jQuery.ajax( {
+			url: url( "mock.php?action=error" ),
+			error: function() {
+				if ( firstTime ) {
+					firstTime = false;
+					jQuery.ajax( this );
+				} else {
+					assert.ok( true, "Test retrying with jQuery.ajax(this) works" );
+					jQuery.ajax( {
+						url: url( "mock.php?action=error&x=2" ),
+						beforeSend: function() {
+							if ( !previousUrl ) {
+								previousUrl = this.url;
+							} else {
+								assert.strictEqual( this.url, previousUrl, "url parameters are not re-appended" );
+								QUnit.start();
+								return false;
+							}
+						},
+						error: function() {
+							jQuery.ajax( this );
+						}
+					} );
+				}
+			}
+		} );
+	} );
 
-	params = {foo: ["a", "b", "c"]};
-	equal( jQuery.param(params), "foo%5B%5D=a&foo%5B%5D=b&foo%5B%5D=c", "with array of strings" );
+	ajaxTest( "jQuery.ajax() - headers", 5, function( assert ) {
+		return {
+			setup: function() {
+				jQuery( document ).ajaxSend( function( evt, xhr ) {
+					xhr.setRequestHeader( "ajax-send", "test" );
+				} );
+			},
+			url: url( "mock.php?action=headers&keys=siMPle|SometHing-elsE|OthEr|Nullable|undefined|Empty|ajax-send" ),
+			headers: {
+				"siMPle": "value",
+				"SometHing-elsE": "other value",
+				"OthEr": "something else",
+				"Nullable": null,
+				"undefined": undefined
 
-	params = {foo: ["baz", 42, "All your base are belong to us"] };
-	equal( jQuery.param(params), "foo%5B%5D=baz&foo%5B%5D=42&foo%5B%5D=All+your+base+are+belong+to+us", "more array" );
+				// Support: IE 9 - 11, Edge 12 - 14 only
+				// Not all browsers allow empty-string headers
+				//"Empty": ""
+			},
+			success: function( data, _, xhr ) {
+				var i, emptyHeader,
+					requestHeaders = jQuery.extend( this.headers, {
+						"ajax-send": "test"
+					} ),
+					tmp = [];
+				for ( i in requestHeaders ) {
+					tmp.push( i, ": ", requestHeaders[ i ] + "", "\n" );
+				}
+				tmp = tmp.join( "" );
 
-	params = {foo: { bar: "baz", beep: 42, quux: "All your base are belong to us" } };
-	equal( jQuery.param(params), "foo%5Bbar%5D=baz&foo%5Bbeep%5D=42&foo%5Bquux%5D=All+your+base+are+belong+to+us", "even more arrays" );
+				assert.strictEqual( data, tmp, "Headers were sent" );
+				assert.strictEqual( xhr.getResponseHeader( "Sample-Header" ), "Hello World", "Sample header received" );
+				assert.ok( data.indexOf( "undefined" ) < 0, "Undefined header value was not sent" );
 
-	params = { a:[1,2], b:{ c:3, d:[4,5], e:{ x:[6], y:7, z:[8,9] }, f:true, g:false, h:undefined }, i:[10,11], j:true, k:false, l:[undefined,0], m:"cowboy hat?" };
-	equal( decodeURIComponent( jQuery.param(params) ), "a[]=1&a[]=2&b[c]=3&b[d][]=4&b[d][]=5&b[e][x][]=6&b[e][y]=7&b[e][z][]=8&b[e][z][]=9&b[f]=true&b[g]=false&b[h]=undefined&i[]=10&i[]=11&j=true&k=false&l[]=undefined&l[]=0&m=cowboy+hat?", "huge structure" );
+				emptyHeader = xhr.getResponseHeader( "Empty-Header" );
+				if ( emptyHeader === null ) {
+					assert.ok( true, "Firefox doesn't support empty headers" );
+				} else {
+					assert.strictEqual( emptyHeader, "", "Empty header received" );
+				}
+				assert.strictEqual( xhr.getResponseHeader( "Sample-Header2" ), "Hello World 2", "Second sample header received" );
+			}
+		};
+	} );
 
-	params = { a: [ 0, [ 1, 2 ], [ 3, [ 4, 5 ], [ 6 ] ], { b: [ 7, [ 8, 9 ], [ { c: 10, d: 11 } ], [ [ 12 ] ], [ [ [ 13 ] ] ], { e: { f: { g: [ 14, [ 15 ] ] } } }, 16 ] }, 17 ] };
-	equal( decodeURIComponent( jQuery.param(params) ), "a[]=0&a[1][]=1&a[1][]=2&a[2][]=3&a[2][1][]=4&a[2][1][]=5&a[2][2][]=6&a[3][b][]=7&a[3][b][1][]=8&a[3][b][1][]=9&a[3][b][2][0][c]=10&a[3][b][2][0][d]=11&a[3][b][3][0][]=12&a[3][b][4][0][0][]=13&a[3][b][5][e][f][g][]=14&a[3][b][5][e][f][g][1][]=15&a[3][b][]=16&a[]=17", "nested arrays" );
+	ajaxTest( "jQuery.ajax() - Accept header", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=headers&keys=accept" ),
+			headers: {
+				Accept: "very wrong accept value"
+			},
+			beforeSend: function( xhr ) {
+				xhr.setRequestHeader( "Accept", "*/*" );
+			},
+			success: function( data ) {
+				assert.strictEqual( data, "accept: */*\n", "Test Accept header is set to last value provided" );
+			}
+		};
+	} );
 
-	params = { a:[1,2], b:{ c:3, d:[4,5], e:{ x:[6], y:7, z:[8,9] }, f:true, g:false, h:undefined }, i:[10,11], j:true, k:false, l:[undefined,0], m:"cowboy hat?" };
-	equal( jQuery.param(params,true), "a=1&a=2&b=%5Bobject+Object%5D&i=10&i=11&j=true&k=false&l=undefined&l=0&m=cowboy+hat%3F", "huge structure, forced traditional" );
+	ajaxTest( "jQuery.ajax() - contentType", 2, function( assert ) {
+		return [
+			{
+				url: url( "mock.php?action=headers&keys=content-type" ),
+				contentType: "test",
+				success: function( data ) {
+					assert.strictEqual( data, "content-type: test\n", "Test content-type is sent when options.contentType is set" );
+				}
+			},
+			{
+				url: url( "mock.php?action=headers&keys=content-type" ),
+				contentType: false,
+				success: function( data ) {
 
-	equal( decodeURIComponent( jQuery.param({ a: [1,2,3], "b[]": [4,5,6], "c[d]": [7,8,9], e: { f: [10], g: [11,12], h: 13 } }) ), "a[]=1&a[]=2&a[]=3&b[]=4&b[]=5&b[]=6&c[d][]=7&c[d][]=8&c[d][]=9&e[f][]=10&e[g][]=11&e[g][]=12&e[h]=13", "Make sure params are not double-encoded." );
+					// Some server/interpreter combinations always supply a Content-Type to scripts
+					data = data || "content-type: \n";
+					assert.strictEqual( data, "content-type: \n", "Test content-type is not set when options.contentType===false" );
+				}
+			}
+		];
+	} );
 
-	// #7945
-	equal( jQuery.param({"jquery": "1.4.2"}), "jquery=1.4.2", "Check that object with a jQuery property get serialized correctly" );
+	ajaxTest( "jQuery.ajax() - protocol-less urls", 1, function( assert ) {
+		return {
+			url: "//somedomain.com",
+			beforeSend: function( xhr, settings ) {
+				assert.equal( settings.url, location.protocol + "//somedomain.com", "Make sure that the protocol is added." );
+				return false;
+			},
+			error: true
+		};
+	} );
 
-	jQuery.ajaxSetup({ traditional: true });
+	ajaxTest( "jQuery.ajax() - hash", 4, function( assert ) {
+		return [
+			{
+				url: baseURL + "name.html#foo",
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, baseURL + "name.html#foo", "Make sure that the URL has its hash." );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: baseURL + "name.html?abc#foo",
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, baseURL + "name.html?abc#foo", "Make sure that the URL has its hash." );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: baseURL + "name.html?abc#foo",
+				data: {
+					"test": 123
+				},
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, baseURL + "name.html?abc&test=123#foo", "Make sure that the URL has its hash." );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: baseURL + "name.html?abc#brownies",
+				data: {
+					"devo": "hat"
+				},
+				cache: false,
+				beforeSend: function( xhr, settings ) {
+					// Remove the random number, but ensure the cache-buster param is there
+					var url = settings.url.replace( /\d+/, "" );
+					assert.equal( url, baseURL + "name.html?abc&devo=hat&_=#brownies", "Make sure that the URL has its hash." );
+					return false;
+				},
+				error: true
+			}
+		];
+	} );
 
-	var params = {foo:"bar", baz:42, quux:"All your base are belong to us"};
-	equal( jQuery.param(params), "foo=bar&baz=42&quux=All+your+base+are+belong+to+us", "simple" );
+	ajaxTest( "jQuery.ajax() - traditional param encoding", 4, function( assert ) {
+		return [
+			{
+				url: "/",
+				traditional: true,
+				data: {
+					"devo": "hat",
+					"answer": 42,
+					"quux": "a space"
+				},
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, "/?devo=hat&answer=42&quux=a%20space", "Simple case" );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: "/",
+				traditional: true,
+				data: {
+					"a": [ 1, 2, 3 ],
+					"b[]": [ "b1", "b2" ]
+				},
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, "/?a=1&a=2&a=3&b%5B%5D=b1&b%5B%5D=b2", "Arrays" );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: "/",
+				traditional: true,
+				data: {
+					"a": [ [ 1, 2 ], [ 3, 4 ], 5 ]
+				},
+				beforeSend: function( xhr, settings ) {
+					assert.equal( settings.url, "/?a=1%2C2&a=3%2C4&a=5", "Nested arrays" );
+					return false;
+				},
+				error: true
+			},
+			{
+				url: "/",
+				traditional: true,
+				data: {
+					"a": [ "w", [ [ "x", "y" ], "z" ] ]
+				},
+				cache: false,
+				beforeSend: function( xhr, settings ) {
+					var url = settings.url.replace( /\d{3,}/, "" );
+					assert.equal( url, "/?a=w&a=x%2Cy%2Cz&_=", "Cache-buster" );
+					return false;
+				},
+				error: true
+			}
+		];
+	} );
 
-	params = {someName: [1, 2, 3], regularThing: "blah" };
-	equal( jQuery.param(params), "someName=1&someName=2&someName=3&regularThing=blah", "with array" );
+	ajaxTest( "jQuery.ajax() - cross-domain detection", 8, function( assert ) {
+		function request( url, title, crossDomainOrOptions ) {
+			return jQuery.extend( {
+				dataType: "jsonp",
+				url: url,
+				beforeSend: function( _, s ) {
+					assert.ok( crossDomainOrOptions === false ? !s.crossDomain : s.crossDomain, title );
+					return false;
+				},
+				error: true
+			}, crossDomainOrOptions );
+		}
 
-	params = {foo: ["a", "b", "c"]};
-	equal( jQuery.param(params), "foo=a&foo=b&foo=c", "with array of strings" );
+		var loc = document.location,
+			samePort = loc.port || ( loc.protocol === "http:" ? 80 : 443 ),
+			otherPort = loc.port === 666 ? 667 : 666,
+			otherProtocol = loc.protocol === "http:" ? "https:" : "http:";
 
-	params = {"foo[]":["baz", 42, "All your base are belong to us"]};
-	equal( jQuery.param(params), "foo%5B%5D=baz&foo%5B%5D=42&foo%5B%5D=All+your+base+are+belong+to+us", "more array" );
+		return [
+			request(
+				loc.protocol + "//" + loc.hostname + ":" + samePort,
+				"Test matching ports are not detected as cross-domain",
+				false
+			),
+			request(
+				otherProtocol + "//" + loc.host,
+				"Test different protocols are detected as cross-domain"
+			),
+			request(
+				"app:/path",
+				"Adobe AIR app:/ URL detected as cross-domain"
+			),
+			request(
+				loc.protocol + "//example.invalid:" + ( loc.port || 80 ),
+				"Test different hostnames are detected as cross-domain"
+			),
+			request(
+				loc.protocol + "//" + loc.hostname + ":" + otherPort,
+				"Test different ports are detected as cross-domain"
+			),
+			request(
+				"about:blank",
+				"Test about:blank is detected as cross-domain"
+			),
+			request(
+				loc.protocol + "//" + loc.host,
+				"Test forced crossDomain is detected as cross-domain",
+				{
+					crossDomain: true
+				}
+			),
+			request(
+				" http://otherdomain.com",
+				"Cross-domain url with leading space is detected as cross-domain"
+			)
+		];
+	} );
 
-	params = {"foo[bar]":"baz", "foo[beep]":42, "foo[quux]":"All your base are belong to us"};
-	equal( jQuery.param(params), "foo%5Bbar%5D=baz&foo%5Bbeep%5D=42&foo%5Bquux%5D=All+your+base+are+belong+to+us", "even more arrays" );
+	ajaxTest( "jQuery.ajax() - abort", 9, function( assert ) {
+		return {
+			setup: addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxError ajaxComplete", assert ),
+			url: url( "mock.php?action=wait&wait=5" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			afterSend: function( xhr ) {
+				assert.strictEqual( xhr.readyState, 1, "XHR readyState indicates successful dispatch" );
+				xhr.abort();
+				assert.strictEqual( xhr.readyState, 0, "XHR readyState indicates successful abortion" );
+			},
+			error: true,
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
 
-	params = { a:[1,2], b:{ c:3, d:[4,5], e:{ x:[6], y:7, z:[8,9] }, f:true, g:false, h:undefined }, i:[10,11], j:true, k:false, l:[undefined,0], m:"cowboy hat?" };
-	equal( jQuery.param(params), "a=1&a=2&b=%5Bobject+Object%5D&i=10&i=11&j=true&k=false&l=undefined&l=0&m=cowboy+hat%3F", "huge structure" );
-
-	params = { a: [ 0, [ 1, 2 ], [ 3, [ 4, 5 ], [ 6 ] ], { b: [ 7, [ 8, 9 ], [ { c: 10, d: 11 } ], [ [ 12 ] ], [ [ [ 13 ] ] ], { e: { f: { g: [ 14, [ 15 ] ] } } }, 16 ] }, 17 ] };
-	equal( jQuery.param(params), "a=0&a=1%2C2&a=3%2C4%2C5%2C6&a=%5Bobject+Object%5D&a=17", "nested arrays (not possible when jQuery.param.traditional == true)" );
-
-	params = { a:[1,2], b:{ c:3, d:[4,5], e:{ x:[6], y:7, z:[8,9] }, f:true, g:false, h:undefined }, i:[10,11], j:true, k:false, l:[undefined,0], m:"cowboy hat?" };
-	equal( decodeURIComponent( jQuery.param(params,false) ), "a[]=1&a[]=2&b[c]=3&b[d][]=4&b[d][]=5&b[e][x][]=6&b[e][y]=7&b[e][z][]=8&b[e][z][]=9&b[f]=true&b[g]=false&b[h]=undefined&i[]=10&i[]=11&j=true&k=false&l[]=undefined&l[]=0&m=cowboy+hat?", "huge structure, forced not traditional" );
-
-	params = { param1: null };
-	equal( jQuery.param(params,false), "param1=null", "Make sure that null params aren't traversed." );
-
-	params = {"test": {"length": 3, "foo": "bar"} };
-	equal( jQuery.param( params, false ), "test%5Blength%5D=3&test%5Bfoo%5D=bar", "Sub-object with a length property" );
-});
-
-test("jQuery.param() Constructed prop values", function() {
-	expect( 4 );
-
-	function Record() {
-		this.prop = "val";
+	if ( !/android 4\.0/i.test( navigator.userAgent ) ) {
+		ajaxTest( "jQuery.ajax() - native abort", 2, function( assert ) {
+			return {
+				url: url( "mock.php?action=wait&wait=1" ),
+				xhr: function() {
+					var xhr = new window.XMLHttpRequest();
+					setTimeout( function() {
+						xhr.abort();
+					}, 100 );
+					return xhr;
+				},
+				error: function( xhr, msg ) {
+					assert.strictEqual( msg, "error", "Native abort triggers error callback" );
+				},
+				complete: function() {
+					assert.ok( true, "complete" );
+				}
+			};
+		} );
 	}
 
-	var params = { "test": new String("foo") };
-	equal( jQuery.param( params, false ), "test=foo", "Do not mistake new String() for a plain object" );
+	// Support: Android <= 4.0 - 4.3 only
+	// Android 4.0-4.3 does not have ontimeout on an xhr
+	if ( "ontimeout" in new window.XMLHttpRequest() ) {
+		ajaxTest( "jQuery.ajax() - native timeout", 2, function( assert ) {
+			return {
+				url: url( "mock.php?action=wait&wait=1" ),
+				xhr: function() {
+					var xhr = new window.XMLHttpRequest();
+					xhr.timeout = 1;
+					return xhr;
+				},
+				error: function( xhr, msg ) {
+					assert.strictEqual( msg, "error", "Native timeout triggers error callback" );
+				},
+				complete: function() {
+					assert.ok( true, "complete" );
+				}
+			};
+		} );
+	}
 
-	params = { "test": new Number(5) };
-	equal( jQuery.param( params, false ), "test=5", "Do not mistake new Number() for a plain object" );
+	ajaxTest( "jQuery.ajax() - events with context", 12, function( assert ) {
+		var context = document.createElement( "div" );
 
-	params = { "test": new Date() };
-	ok( jQuery.param( params, false ), "(Non empty string returned) Do not mistake new Date() for a plain object" );
-
-	// should allow non-native constructed objects
-	params = { "test": new Record() };
-	equal( jQuery.param( params, false ), jQuery.param({ "test": { prop: "val" } }), "Allow non-native constructed objects" );
-});
-
-test("synchronous request", function() {
-	expect(1);
-	ok( /^{ "data"/.test( jQuery.ajax({url: url("data/json_obj.js"), dataType: "text", async: false}).responseText ), "check returned text" );
-});
-
-test("synchronous request with callbacks", function() {
-	expect(2);
-	var result;
-	jQuery.ajax({url: url("data/json_obj.js"), async: false, dataType: "text", success: function(data) { ok(true, "sucess callback executed"); result = data; } });
-	ok( /^{ "data"/.test( result ), "check returned text" );
-});
-
-test("pass-through request object", function() {
-	expect(8);
-	stop();
-
-	var target = "data/name.html";
-	var successCount = 0;
-	var errorCount = 0;
-	var errorEx = "";
-	var success = function() {
-		successCount++;
-	};
-	jQuery("#foo").ajaxError(function (e, xml, s, ex) {
-		errorCount++;
-		errorEx += ": " + xml.status;
-	});
-	jQuery("#foo").one("ajaxStop", function () {
-		equal(successCount, 5, "Check all ajax calls successful");
-		equal(errorCount, 0, "Check no ajax errors (status" + errorEx + ")");
-		jQuery("#foo").unbind("ajaxError");
-
-		start();
-	});
-
-	ok( jQuery.get(url(target), success), "get" );
-	ok( jQuery.post(url(target), success), "post" );
-	ok( jQuery.getScript(url("data/test.js"), success), "script" );
-	ok( jQuery.getJSON(url("data/json_obj.js"), success), "json" );
-	ok( jQuery.ajax({url: url(target), success: success}), "generic" );
-});
-
-test("ajax cache", function () {
-	expect(18);
-
-	stop();
-
-	var count = 0;
-
-	jQuery("#firstp").bind("ajaxSuccess", function (e, xml, s) {
-		var re = /_=(.*?)(&|$)/g;
-		var oldOne = null;
-		for (var i = 0; i < 6; i++) {
-			var ret = re.exec(s.url);
-			if (!ret) {
-				break;
-			}
-			oldOne = ret[1];
+		function event( e ) {
+			assert.equal( this, context, e.type );
 		}
-		equal(i, 1, "Test to make sure only one 'no-cache' parameter is there");
-		ok(oldOne != "tobereplaced555", "Test to be sure parameter (if it was there) was replaced");
-		if(++count == 6)
-			start();
-	});
 
-	ok( jQuery.ajax({url: "data/text.php", cache:false}), "test with no parameters" );
-	ok( jQuery.ajax({url: "data/text.php?pizza=true", cache:false}), "test with 1 parameter" );
-	ok( jQuery.ajax({url: "data/text.php?_=tobereplaced555", cache:false}), "test with _= parameter" );
-	ok( jQuery.ajax({url: "data/text.php?pizza=true&_=tobereplaced555", cache:false}), "test with 1 parameter plus _= one" );
-	ok( jQuery.ajax({url: "data/text.php?_=tobereplaced555&tv=false", cache:false}), "test with 1 parameter plus _= one before it" );
-	ok( jQuery.ajax({url: "data/text.php?name=David&_=tobereplaced555&washere=true", cache:false}), "test with 2 parameters surrounding _= one" );
-});
+		function callback( msg ) {
+			return function() {
+				assert.equal( this, context, "context is preserved on callback " + msg );
+			};
+		}
 
-/*
- * Test disabled.
- * The assertions expect that the passed-in object will be modified,
- * which shouldn't be the case. Fixes #5439.
-test("global ajaxSettings", function() {
-	expect(2);
-
-	var tmp = jQuery.extend({}, jQuery.ajaxSettings);
-	var orig = { url: "data/with_fries.xml" };
-	var t;
-
-	jQuery.ajaxSetup({ data: {foo: "bar", bar: "BAR"} });
-
-	t = jQuery.extend({}, orig);
-	t.data = {};
-	jQuery.ajax(t);
-	ok( t.url.indexOf("foo") > -1 && t.url.indexOf("bar") > -1, "Check extending {}" );
-
-	t = jQuery.extend({}, orig);
-	t.data = { zoo: "a", ping: "b" };
-	jQuery.ajax(t);
-	ok( t.url.indexOf("ping") > -1 && t.url.indexOf("zoo") > -1 && t.url.indexOf("foo") > -1 && t.url.indexOf("bar") > -1, "Check extending { zoo: "a", ping: "b" }" );
-
-	jQuery.ajaxSettings = tmp;
-});
-*/
-
-test("load(String)", function() {
-	expect(1);
-	stop(); // check if load can be called with only url
-	jQuery("#first").load("data/name.html", function() {
-		start();
-	});
-});
-
-test("load('url selector')", function() {
-	expect(1);
-	stop(); // check if load can be called with only url
-	jQuery("#first").load("data/test3.html div.user", function(){
-		equal( jQuery(this).children("div").length, 2, "Verify that specific elements were injected" );
-		start();
-	});
-});
-
-test("load(String, Function) with ajaxSetup on dataType json, see #2046", function() {
-	expect(1);
-	stop();
-	jQuery.ajaxSetup({ dataType: "json" });
-	jQuery("#first").ajaxComplete(function (e, xml, s) {
-		equal( s.dataType, "html", "Verify the load() dataType was html" );
-		jQuery("#first").unbind("ajaxComplete");
-		jQuery.ajaxSetup({ dataType: "" });
-		start();
-	});
-	jQuery("#first").load("data/test3.html");
-});
-
-test("load(String, Function) - simple: inject text into DOM", function() {
-	expect(2);
-	stop();
-	jQuery("#first").load(url("data/name.html"), function() {
-		ok( /^ERROR/.test(jQuery("#first").text()), "Check if content was injected into the DOM" );
-		start();
-	});
-});
-
-test("load(String, Function) - check scripts", function() {
-	expect(7);
-	stop();
-
-	var verifyEvaluation = function() {
-		equal( foobar, "bar", "Check if script src was evaluated after load" );
-		equal( jQuery("#ap").html(), "bar", "Check if script evaluation has modified DOM");
-
-		start();
-	};
-	jQuery("#first").load(url("data/test.html"), function() {
-		ok( jQuery("#first").html().match(/^html text/), "Check content after loading html" );
-		equal( jQuery("#foo").html(), "foo", "Check if script evaluation has modified DOM");
-		equal( testFoo, "foo", "Check if script was evaluated after load" );
-		setTimeout(verifyEvaluation, 600);
-	});
-});
-
-test("load(String, Function) - check file with only a script tag", function() {
-	expect(3);
-	stop();
-
-	jQuery("#first").load(url("data/test2.html"), function() {
-		equal( jQuery("#foo").html(), "foo", "Check if script evaluation has modified DOM");
-		equal( testFoo, "foo", "Check if script was evaluated after load" );
-
-		start();
-	});
-});
-
-test("load(String, Function) - dataFilter in ajaxSettings", function() {
-	expect(2);
-	stop();
-	jQuery.ajaxSetup({ dataFilter: function() { return "Hello World"; } });
-	var div = jQuery("<div/>").load(url("data/name.html"), function(responseText) {
-		strictEqual( div.html(), "Hello World" , "Test div was filled with filtered data" );
-		strictEqual( responseText, "Hello World" , "Test callback receives filtered data" );
-		jQuery.ajaxSetup({ dataFilter: 0 });
-		start();
-	});
-});
-
-test("load(String, Object, Function)", function() {
-	expect(2);
-	stop();
-
-	jQuery("<div />").load(url("data/params_html.php"), { foo: 3, bar: "ok" }, function() {
-		var $post = jQuery(this).find("#post");
-		equal( $post.find("#foo").text(), "3", "Check if a hash of data is passed correctly");
-		equal( $post.find("#bar").text(), "ok", "Check if a hash of data is passed correctly");
-		start();
-	});
-});
-
-test("load(String, String, Function)", function() {
-	expect(2);
-	stop();
-
-	jQuery("<div />").load(url("data/params_html.php"), "foo=3&bar=ok", function() {
-		var $get = jQuery(this).find("#get");
-		equal( $get.find("#foo").text(), "3", "Check if a string of data is passed correctly");
-		equal( $get.find("#bar").text(), "ok", "Check if a	 of data is passed correctly");
-		start();
-	});
-});
-
-test("jQuery.get(String, Function) - data in ajaxSettings (#8277)", function() {
-	expect(1);
-	stop();
-	jQuery.ajaxSetup({
-		data: "helloworld"
-	});
-	jQuery.get(url("data/echoQuery.php"), function(data) {
-		ok( /helloworld$/.test( data ), "Data from ajaxSettings was used");
-		jQuery.ajaxSetup({
-			data: null
-		});
-		start();
-	});
-});
-
-test("jQuery.get(String, Hash, Function) - parse xml and use text() on nodes", function() {
-	expect(2);
-	stop();
-	jQuery.get(url("data/dashboard.xml"), function(xml) {
-		var content = [];
-		jQuery("tab", xml).each(function() {
-			content.push(jQuery(this).text());
-		});
-		equal( content[0], "blabla", "Check first tab");
-		equal( content[1], "blublu", "Check second tab");
-		start();
-	});
-});
-
-test("jQuery.getScript(String, Function) - with callback", function() {
-	expect(3);
-	stop();
-	jQuery.getScript(url("data/test.js"), function( data, _, jqXHR ) {
-		equal( foobar, "bar", "Check if script was evaluated" );
-		strictEqual( data, jqXHR.responseText, "Same-domain script requests returns the source of the script (#8082)" );
-		setTimeout(function() {
-			start();
-		}, 1000 );
-	});
-});
-
-test("jQuery.getScript(String, Function) - no callback", function() {
-	expect(1);
-	stop();
-	jQuery.getScript(url("data/test.js"), function(){
-		start();
-	});
-});
-
-jQuery.each( [ "Same Domain", "Cross Domain" ] , function( crossDomain , label ) {
-
-	test("jQuery.ajax() - JSONP, " + label, function() {
-		expect(20);
-
-		var count = 0;
-		function plus(){ if ( ++count == 18 ) start(); }
-
-		stop();
-
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, no callback)" );
-				plus();
+		return {
+			setup: function() {
+				jQuery( context ).appendTo( "#foo" )
+					.ajaxSend( event )
+					.ajaxComplete( event )
+					.ajaxError( event )
+					.ajaxSuccess( event );
 			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, no callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php?callback=?",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, url callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, url callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			data: "callback=?",
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, data callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, data callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php?callback=??",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, url context-free callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, url context-free callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			data: "callback=??",
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, data context-free callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, data context-free callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php/??",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, REST-like)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, REST-like)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php/???json=1",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				strictEqual( jQuery.type(data), "array", "JSON results returned (GET, REST-like with param)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, REST-like with param)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			jsonp: "callback",
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, data obj callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, data obj callback)" );
-				plus();
-			}
-		});
-
-		window.jsonpResults = function(data) {
-			ok( data.data, "JSON results returned (GET, custom callback function)" );
-			window.jsonpResults = undefined;
-			plus();
+			requests: [ {
+				url: url( "name.html" ),
+				context: context,
+				beforeSend: callback( "beforeSend" ),
+				success: callback( "success" ),
+				complete: callback( "complete" )
+			}, {
+				url: url( "404.txt" ),
+				context: context,
+				beforeSend: callback( "beforeSend" ),
+				error: callback( "error" ),
+				complete: callback( "complete" )
+			} ]
 		};
+	} );
 
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			jsonpCallback: "jsonpResults",
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, custom callback name)" );
-				plus();
+	ajaxTest( "jQuery.ajax() - events without context", 3, function( assert ) {
+		function nocallback( msg ) {
+			return function() {
+				assert.equal( typeof this.url, "string", "context is settings on callback " + msg );
+			};
+		}
+		return {
+			url: url( "404.txt" ),
+			beforeSend: nocallback( "beforeSend" ),
+			error: nocallback( "error" ),
+			complete:  nocallback( "complete" )
+		};
+	} );
+
+	ajaxTest( "#15118 - jQuery.ajax() - function without jQuery.event", 1, function( assert ) {
+		var holder;
+		return {
+			url: url( "mock.php?action=json" ),
+			setup: function() {
+				holder = jQuery.event;
+				delete jQuery.event;
 			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, custom callback name)" );
-				plus();
-			}
-		});
+			complete: function() {
+				assert.ok( true, "Call can be made without jQuery.event" );
+				jQuery.event = holder;
+			},
+			success: true
+		};
+	} );
 
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			jsonpCallback: "functionToCleanUp",
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, custom callback name to be cleaned up)" );
-				strictEqual( window.functionToCleanUp, undefined, "Callback was removed (GET, custom callback name to be cleaned up)" );
-				plus();
-				var xhr;
-				jQuery.ajax({
-					url: "data/jsonp.php",
+	ajaxTest( "#15160 - jQuery.ajax() - request manually aborted in ajaxSend", 3, function( assert ) {
+		return {
+			setup: function() {
+				jQuery( document ).on( "ajaxSend", function( e, jqXHR ) {
+					jqXHR.abort();
+				} );
+
+				jQuery( document ).on( "ajaxError ajaxComplete", function( e, jqXHR ) {
+					assert.equal( jqXHR.statusText, "abort", "jqXHR.statusText equals abort on global ajaxComplete and ajaxError events" );
+				} );
+			},
+			url: url( "name.html" ),
+			error: true,
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - context modification", 1, function( assert ) {
+		return {
+			url: url( "name.html" ),
+			context: {},
+			beforeSend: function() {
+				this.test = "foo";
+			},
+			afterSend: function() {
+				assert.strictEqual( this.context.test, "foo", "Make sure the original object is maintained." );
+			},
+			success: true
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - context modification through ajaxSetup", 3, function( assert ) {
+		var obj = {};
+		return {
+			setup: function() {
+				jQuery.ajaxSetup( {
+					context: obj
+				} );
+				assert.strictEqual( jQuery.ajaxSettings.context, obj, "Make sure the context is properly set in ajaxSettings." );
+			},
+			requests: [ {
+				url: url( "name.html" ),
+				success: function() {
+					assert.strictEqual( this, obj, "Make sure the original object is maintained." );
+				}
+			}, {
+				url: url( "name.html" ),
+				context: {},
+				success: function() {
+					assert.ok( this !== obj, "Make sure overriding context is possible." );
+				}
+			} ]
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - disabled globals", 3, function( assert ) {
+		return {
+			setup: addGlobalEvents( "", assert ),
+			global: false,
+			url: url( "name.html" ),
+			beforeSend: function() {
+				assert.ok( true, "beforeSend" );
+			},
+			success: function() {
+				assert.ok( true, "success" );
+			},
+			complete: function() {
+				assert.ok( true, "complete" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - xml: non-namespace elements inside namespaced elements", 3, function( assert ) {
+		return {
+			url: url( "with_fries.xml" ),
+			dataType: "xml",
+			success: function( resp ) {
+				assert.equal( jQuery( "properties", resp ).length, 1, "properties in responseXML" );
+				assert.equal( jQuery( "jsconf", resp ).length, 1, "jsconf in responseXML" );
+				assert.equal( jQuery( "thing", resp ).length, 2, "things in responseXML" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - xml: non-namespace elements inside namespaced elements (over JSONP)", 3, function( assert ) {
+		return {
+			url: url( "mock.php?action=xmlOverJsonp" ),
+			dataType: "jsonp xml",
+			success: function( resp ) {
+				assert.equal( jQuery( "properties", resp ).length, 1, "properties in responseXML" );
+				assert.equal( jQuery( "jsconf", resp ).length, 1, "jsconf in responseXML" );
+				assert.equal( jQuery( "thing", resp ).length, 2, "things in responseXML" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - HEAD requests", 2, function( assert ) {
+		return [
+			{
+				url: url( "name.html" ),
+				type: "HEAD",
+				success: function( data, status, xhr ) {
+					assert.ok( /Date/i.test( xhr.getAllResponseHeaders() ), "No Date in HEAD response" );
+				}
+			},
+			{
+				url: url( "name.html" ),
+				data: {
+					"whip_it": "good"
+				},
+				type: "HEAD",
+				success: function( data, status, xhr ) {
+					assert.ok( /Date/i.test( xhr.getAllResponseHeaders() ), "No Date in HEAD response with data" );
+				}
+			}
+		];
+	} );
+
+	ajaxTest( "jQuery.ajax() - beforeSend", 1, function( assert ) {
+		return {
+			url: url( "name.html" ),
+			beforeSend: function() {
+				this.check = true;
+			},
+			success: function() {
+				assert.ok( this.check, "check beforeSend was executed" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - beforeSend, cancel request manually", 2, function( assert ) {
+		return {
+			create: function() {
+				return jQuery.ajax( {
+					url: url( "name.html" ),
+					beforeSend: function( xhr ) {
+						assert.ok( true, "beforeSend got called, canceling" );
+						xhr.abort();
+					},
+					success: function() {
+						assert.ok( false, "request didn't get canceled" );
+					},
+					complete: function() {
+						assert.ok( false, "request didn't get canceled" );
+					},
+					error: function() {
+						assert.ok( false, "request didn't get canceled" );
+					}
+				} );
+			},
+			fail: function( _, reason ) {
+				assert.strictEqual( reason, "canceled", "canceled request must fail with 'canceled' status text" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - dataType html", 5, function( assert ) {
+		return {
+			setup: function() {
+				Globals.register( "testFoo" );
+				Globals.register( "testBar" );
+			},
+			dataType: "html",
+			url: url( "mock.php?action=testHTML&baseURL=" + baseURL ),
+			success: function( data ) {
+				assert.ok( data.match( /^html text/ ), "Check content for datatype html" );
+				jQuery( "#ap" ).html( data );
+				assert.strictEqual( window[ "testFoo" ], "foo", "Check if script was evaluated for datatype html" );
+				assert.strictEqual( window[ "testBar" ], "bar", "Check if script src was evaluated for datatype html" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - synchronous request", 1, function( assert ) {
+		return {
+			url: url( "json_obj.js" ),
+			dataType: "text",
+			async: false,
+			success: true,
+			afterSend: function( xhr ) {
+				assert.ok( /^\{ "data"/.test( xhr.responseText ), "check returned text" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - synchronous request with callbacks", 2, function( assert ) {
+		return {
+			url: url( "json_obj.js" ),
+			async: false,
+			dataType: "text",
+			success: true,
+			afterSend: function( xhr ) {
+				var result;
+				xhr.done( function( data ) {
+					assert.ok( true, "success callback executed" );
+					result = data;
+				} );
+				assert.ok( /^\{ "data"/.test( result ), "check returned text" );
+			}
+		};
+	} );
+
+	QUnit.asyncTest( "jQuery.ajax(), jQuery.get[Script|JSON](), jQuery.post(), pass-through request object", 8, function( assert ) {
+		var target = "name.html",
+			successCount = 0,
+			errorCount = 0,
+			errorEx = "",
+			success = function() {
+				successCount++;
+			};
+		jQuery( document ).on( "ajaxError.passthru", function( e, xml ) {
+			errorCount++;
+			errorEx += ": " + xml.status;
+		} );
+		jQuery( document ).one( "ajaxStop", function() {
+			assert.equal( successCount, 5, "Check all ajax calls successful" );
+			assert.equal( errorCount, 0, "Check no ajax errors (status" + errorEx + ")" );
+			jQuery( document ).off( "ajaxError.passthru" );
+			QUnit.start();
+		} );
+		Globals.register( "testBar" );
+
+		assert.ok( jQuery.get( url( target ), success ), "get" );
+		assert.ok( jQuery.post( url( target ), success ), "post" );
+		assert.ok( jQuery.getScript( url( "mock.php?action=testbar" ), success ), "script" );
+		assert.ok( jQuery.getJSON( url( "json_obj.js" ), success ), "json" );
+		assert.ok( jQuery.ajax( {
+			url: url( target ),
+			success: success
+		} ), "generic" );
+	} );
+
+	ajaxTest( "jQuery.ajax() - cache", 28, function( assert ) {
+		var re = /_=(.*?)(&|$)/g,
+			rootUrl = baseURL + "text.txt";
+
+		function request( url, title ) {
+			return {
+				url: url,
+				cache: false,
+				beforeSend: function() {
+					var parameter, tmp;
+
+					// URL sanity check
+					assert.equal( this.url.indexOf( rootUrl ), 0, "root url not mangled: " + this.url );
+					assert.equal( /\&.*\?/.test( this.url ), false, "parameter delimiters in order" );
+
+					while ( ( tmp = re.exec( this.url ) ) ) {
+						assert.strictEqual( parameter, undefined, title + ": only one 'no-cache' parameter" );
+						parameter = tmp[ 1 ];
+						assert.notStrictEqual( parameter, "tobereplaced555", title + ": parameter (if it was there) was replaced" );
+					}
+					return false;
+				},
+				error: true
+			};
+		}
+
+		return [
+			request(
+				rootUrl,
+				"no query"
+			),
+			request(
+				rootUrl + "?",
+				"empty query"
+			),
+			request(
+				rootUrl + "?pizza=true",
+				"1 parameter"
+			),
+			request(
+				rootUrl + "?_=tobereplaced555",
+				"_= parameter"
+			),
+			request(
+				rootUrl + "?pizza=true&_=tobereplaced555",
+				"1 parameter and _="
+			),
+			request(
+				rootUrl + "?_=tobereplaced555&tv=false",
+				"_= and 1 parameter"
+			),
+			request(
+				rootUrl + "?name=David&_=tobereplaced555&washere=true",
+				"2 parameters surrounding _="
+			)
+		];
+	} );
+
+	jQuery.each( [ " - Same Domain", " - Cross Domain" ], function( crossDomain, label ) {
+
+		ajaxTest( "jQuery.ajax() - JSONP - Query String (?n)" + label, 4, function( assert ) {
+			return [
+				{
+					url: baseURL + "mock.php?action=jsonp&callback=?",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, url callback)" );
+					}
+				},
+				{
+					url: baseURL + "mock.php?action=jsonp&callback=??",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, url context-free callback)" );
+					}
+				},
+				{
+					url: baseURL + "mock.php/???action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, REST-like)" );
+					}
+				},
+				{
+					url: baseURL + "mock.php/???action=jsonp&array=1",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( Array.isArray( data ), "JSON results returned (GET, REST-like with param)" );
+					}
+				}
+			];
+		} );
+
+		ajaxTest( "jQuery.ajax() - JSONP - Explicit callback param" + label, 10, function( assert ) {
+			return {
+				setup: function() {
+					Globals.register( "functionToCleanUp" );
+					Globals.register( "XXX" );
+					Globals.register( "jsonpResults" );
+					window[ "jsonpResults" ] = function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (GET, custom callback function)" );
+					};
+				},
+				requests: [ {
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					jsonp: "callback",
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (GET, data obj callback)" );
+					}
+				}, {
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					jsonpCallback: "jsonpResults",
+					success: function( data ) {
+						assert.strictEqual(
+							typeof window[ "jsonpResults" ],
+							"function",
+							"should not rewrite original function"
+						);
+						assert.ok( data.data, "JSON results returned (GET, custom callback name)" );
+					}
+				}, {
+					url: baseURL + "mock.php?action=jsonp",
 					dataType: "jsonp",
 					crossDomain: crossDomain,
 					jsonpCallback: "functionToCleanUp",
-					beforeSend: function( jqXHR ) {
-						xhr = jqXHR;
-						return false;
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (GET, custom callback name to be cleaned up)" );
+						assert.strictEqual( window[ "functionToCleanUp" ], true, "Callback was removed (GET, custom callback name to be cleaned up)" );
+						var xhr;
+						jQuery.ajax( {
+							url: baseURL + "mock.php?action=jsonp",
+							dataType: "jsonp",
+							crossDomain: crossDomain,
+							jsonpCallback: "functionToCleanUp",
+							beforeSend: function( jqXHR ) {
+								xhr = jqXHR;
+								return false;
+							}
+						} );
+						xhr.fail( function() {
+							assert.ok( true, "Ajax error JSON (GET, custom callback name to be cleaned up)" );
+							assert.strictEqual( window[ "functionToCleanUp" ], true, "Callback was removed after early abort (GET, custom callback name to be cleaned up)" );
+						} );
 					}
-				});
-				xhr.error(function() {
-					ok( true, "Ajax error JSON (GET, custom callback name to be cleaned up)" );
-					strictEqual( window.functionToCleanUp, undefined, "Callback was removed after early abort (GET, custom callback name to be cleaned up)" );
-					plus();
-				});
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, custom callback name to be cleaned up)" );
-				plus();
-			}
-		});
+				}, {
+					url: baseURL + "mock.php?action=jsonp&callback=XXX",
+					dataType: "jsonp",
+					jsonp: false,
+					jsonpCallback: "XXX",
+					crossDomain: crossDomain,
+					beforeSend: function() {
+						assert.ok( /action=jsonp&callback=XXX&_=\d+$/.test( this.url ), "The URL wasn't messed with (GET, custom callback name with no url manipulation)" );
+					},
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (GET, custom callback name with no url manipulation)" );
+					}
+				} ]
+			};
+		} );
 
-		jQuery.ajax({
-			type: "POST",
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (POST, no callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, data obj callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			type: "POST",
-			url: "data/jsonp.php",
-			data: "callback=?",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (POST, data callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (POST, data callback)" );
-				plus();
-			}
-		});
-
-		jQuery.ajax({
-			type: "POST",
-			url: "data/jsonp.php",
-			jsonp: "callback",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			success: function(data){
-				ok( data.data, "JSON results returned (POST, data obj callback)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (POST, data obj callback)" );
-				plus();
-			}
-		});
-
-		//#7578
-		jQuery.ajax({
-			url: "data/jsonp.php",
-			dataType: "jsonp",
-			crossDomain: crossDomain,
-			beforeSend: function(){
-				strictEqual( this.cache, false, "cache must be false on JSON request" );
-				plus();
-				return false;
-			}
-		});
-
-		jQuery.ajax({
-			url: "data/jsonp.php?callback=XXX",
-			dataType: "jsonp",
-			jsonp: false,
-			jsonpCallback: "XXX",
-			crossDomain: crossDomain,
-			beforeSend: function() {
-				ok( /^data\/jsonp.php\?callback=XXX&_=\d+$/.test( this.url ) ,
-					"The URL wasn't messed with (GET, custom callback name with no url manipulation)" );
-				plus();
-			},
-			success: function(data){
-				ok( data.data, "JSON results returned (GET, custom callback name with no url manipulation)" );
-				plus();
-			},
-			error: function(data){
-				ok( false, "Ajax error JSON (GET, custom callback name with no url manipulation)" );
-				plus();
-			}
-		});
-
-	});
-});
-
-test("jQuery.ajax() - script, Remote", function() {
-	expect(2);
-
-	var base = window.location.href.replace(/[^\/]*$/, "");
-
-	stop();
-
-	jQuery.ajax({
-		url: base + "data/test.js",
-		dataType: "script",
-		success: function(data){
-			ok( foobar, "Script results returned (GET, no callback)" );
-			start();
-		}
-	});
-});
-
-test("jQuery.ajax() - script, Remote with POST", function() {
-	expect(3);
-
-	var base = window.location.href.replace(/[^\/]*$/, "");
-
-	stop();
-
-	jQuery.ajax({
-		url: base + "data/test.js",
-		type: "POST",
-		dataType: "script",
-		success: function(data, status){
-			ok( foobar, "Script results returned (POST, no callback)" );
-			equal( status, "success", "Script results returned (POST, no callback)" );
-			start();
-		},
-		error: function(xhr) {
-			ok( false, "ajax error, status code: " + xhr.status );
-			start();
-		}
-	});
-});
-
-test("jQuery.ajax() - script, Remote with scheme-less URL", function() {
-	expect(2);
-
-	var base = window.location.href.replace(/[^\/]*$/, "");
-	base = base.replace(/^.*?\/\//, "//");
-
-	stop();
-
-	jQuery.ajax({
-		url: base + "data/test.js",
-		dataType: "script",
-		success: function(data){
-			ok( foobar, "Script results returned (GET, no callback)" );
-			start();
-		}
-	});
-});
-
-test("jQuery.ajax() - malformed JSON", function() {
-	expect(2);
-
-	stop();
-
-	jQuery.ajax({
-		url: "data/badjson.js",
-		dataType: "json",
-		success: function(){
-			ok( false, "Success." );
-			start();
-		},
-		error: function(xhr, msg, detailedMsg) {
-			equal( "parsererror", msg, "A parse error occurred." );
-			ok( /(invalid|error|exception)/i.test(detailedMsg), "Detailed parsererror message provided" );
-	  		start();
-		}
-	});
-});
-
-test("jQuery.ajax() - script by content-type", function() {
-	expect(2);
-
-	stop();
-
-	jQuery.when(
-
-		jQuery.ajax({
-			url: "data/script.php",
-			data: { header: "script" }
-		}),
-
-		jQuery.ajax({
-			url: "data/script.php",
-			data: { header: "ecma" }
-		})
-
-	).always(function() {
-		start();
-	});
-});
-
-test("jQuery.ajax() - json by content-type", function() {
-	expect(5);
-
-	stop();
-
-	jQuery.ajax({
-		url: "data/json.php",
-		data: { header: "json", json: "array" },
-		success: function( json ) {
-	  		ok( json.length >= 2, "Check length");
-	  		equal( json[0].name, "John", "Check JSON: first, name" );
-	  		equal( json[0].age, 21, "Check JSON: first, age" );
-	  		equal( json[1].name, "Peter", "Check JSON: second, name" );
-	  		equal( json[1].age, 25, "Check JSON: second, age" );
-	  		start();
-		}
-	});
-});
-
-test("jQuery.ajax() - json by content-type disabled with options", function() {
-	expect(6);
-
-	stop();
-
-	jQuery.ajax({
-		url: url("data/json.php"),
-		data: { header: "json", json: "array" },
-		contents: {
-			json: false
-		},
-		success: function( text ) {
-			equal( typeof text , "string" , "json wasn't auto-determined" );
-			var json = jQuery.parseJSON( text );
-	  		ok( json.length >= 2, "Check length");
-	  		equal( json[0].name, "John", "Check JSON: first, name" );
-	  		equal( json[0].age, 21, "Check JSON: first, age" );
-	  		equal( json[1].name, "Peter", "Check JSON: second, name" );
-	  		equal( json[1].age, 25, "Check JSON: second, age" );
-	  		start();
-		}
-	});
-});
-
-test("jQuery.getJSON(String, Hash, Function) - JSON array", function() {
-	expect(5);
-	stop();
-	jQuery.getJSON(url("data/json.php"), {json: "array"}, function(json) {
-	  ok( json.length >= 2, "Check length");
-	  equal( json[0].name, "John", "Check JSON: first, name" );
-	  equal( json[0].age, 21, "Check JSON: first, age" );
-	  equal( json[1].name, "Peter", "Check JSON: second, name" );
-	  equal( json[1].age, 25, "Check JSON: second, age" );
-	  start();
-	});
-});
-
-test("jQuery.getJSON(String, Function) - JSON object", function() {
-	expect(2);
-	stop();
-	jQuery.getJSON(url("data/json.php"), function(json) {
-	  if (json && json.data) {
-		  equal( json.data.lang, "en", "Check JSON: lang" );
-		  equal( json.data.length, 25, "Check JSON: length" );
-	  }
-	  start();
-	});
-});
-
-test("jQuery.getJSON - Using Native JSON", function() {
-	expect(2);
-
-	var old = window.JSON;
-	JSON = {
-		parse: function(str){
-			ok( true, "Verifying that parse method was run" );
-			return true;
-		}
-	};
-
-	stop();
-	jQuery.getJSON(url("data/json.php"), function(json) {
-		window.JSON = old;
-		equal( json, true, "Verifying return value" );
-		start();
-	});
-});
-
-test("jQuery.getJSON(String, Function) - JSON object with absolute url to local content", function() {
-	expect(2);
-
-	var base = window.location.href.replace(/[^\/]*$/, "");
-
-	stop();
-	jQuery.getJSON(url(base + "data/json.php"), function(json) {
-	  equal( json.data.lang, "en", "Check JSON: lang" );
-	  equal( json.data.length, 25, "Check JSON: length" );
-	  start();
-	});
-});
-
-test("jQuery.post - data", 3, function() {
-	stop();
-
-	jQuery.when(
-		jQuery.post( url( "data/name.php" ), { xml: "5-2", length: 3 }, function( xml ) {
-			jQuery( "math", xml ).each(function() {
-				equal( jQuery( "calculation", this ).text(), "5-2", "Check for XML" );
-				equal( jQuery( "result", this ).text(), "3", "Check for XML" );
-			});
-		}),
-
-		jQuery.ajax({
-			url: url("data/echoData.php"),
-			type: "POST",
-			data: {
-				"test": {
-					"length": 7,
-						"foo": "bar"
+		ajaxTest( "jQuery.ajax() - JSONP - Callback in data" + label, 2, function( assert ) {
+			return [
+				{
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					data: "callback=?",
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, data callback)" );
+					}
+				},
+				{
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					data: "callback=??",
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, data context-free callback)" );
+					}
 				}
-			},
-			success: function( data ) {
-				strictEqual( data, "test%5Blength%5D=7&test%5Bfoo%5D=bar", "Check if a sub-object with a length param is serialized correctly");
-			}
-		})
-	).always(function() {
-		start();
-	});
+			];
+		} );
 
-});
-
-test("jQuery.post(String, Hash, Function) - simple with xml", function() {
-	expect(4);
-	stop();
-	var done = 0;
-
-	jQuery.post(url("data/name.php"), {xml: "5-2"}, function(xml){
-	  jQuery("math", xml).each(function() {
-			equal( jQuery("calculation", this).text(), "5-2", "Check for XML" );
-			equal( jQuery("result", this).text(), "3", "Check for XML" );
-		 });
-	  if ( ++done === 2 ) start();
-	});
-
-	jQuery.post(url("data/name.php?xml=5-2"), {}, function(xml){
-	  jQuery("math", xml).each(function() {
-			equal( jQuery("calculation", this).text(), "5-2", "Check for XML" );
-			equal( jQuery("result", this).text(), "3", "Check for XML" );
-		 });
-	  if ( ++done === 2 ) start();
-	});
-});
-
-test("jQuery.ajaxSetup({timeout: Number}) - with global timeout", function() {
-	stop();
-
-	var passed = 0;
-
-	jQuery.ajaxSetup({timeout: 1000});
-
-	var pass = function() {
-		passed++;
-		if ( passed == 2 ) {
-			ok( true, "Check local and global callbacks after timeout" );
-			jQuery("#qunit-fixture").unbind("ajaxError");
-			start();
-		}
-	};
-
-	var fail = function(a,b,c) {
-		ok( false, "Check for timeout failed " + a + " " + b );
-		start();
-	};
-
-	jQuery("#qunit-fixture").ajaxError(pass);
-
-	jQuery.ajax({
-	  type: "GET",
-	  url: url("data/name.php?wait=5"),
-	  error: pass,
-	  success: fail
-	});
-
-	// reset timeout
-	jQuery.ajaxSetup({timeout: 0});
-});
-
-test("jQuery.ajaxSetup({timeout: Number}) with localtimeout", function() {
-	stop();
-	jQuery.ajaxSetup({timeout: 50});
-
-	jQuery.ajax({
-	  type: "GET",
-	  timeout: 15000,
-	  url: url("data/name.php?wait=1"),
-	  error: function() {
-		   ok( false, "Check for local timeout failed" );
-		   start();
-	  },
-	  success: function() {
-		ok( true, "Check for local timeout" );
-		start();
-	  }
-	});
-
-	// reset timeout
-	jQuery.ajaxSetup({timeout: 0});
-});
-
-test("jQuery.ajax - simple get", function() {
-	expect(1);
-	stop();
-	jQuery.ajax({
-	  type: "GET",
-	  url: url("data/name.php?name=foo"),
-	  success: function(msg){
-		equal( msg, "bar", "Check for GET" );
-		start();
-	  }
-	});
-});
-
-test("jQuery.ajax - simple post", function() {
-	expect(1);
-	stop();
-	jQuery.ajax({
-	  type: "POST",
-	  url: url("data/name.php"),
-	  data: "name=peter",
-	  success: function(msg){
-		equal( msg, "pan", "Check for POST" );
-		start();
-	  }
-	});
-});
-
-test("ajaxSetup()", function() {
-	expect(1);
-	stop();
-	jQuery.ajaxSetup({
-		url: url("data/name.php?name=foo"),
-		success: function(msg){
-			equal( msg, "bar", "Check for GET" );
-			start();
-		}
-	});
-	jQuery.ajax();
-});
-
-/*
-test("custom timeout does not set error message when timeout occurs, see #970", function() {
-	stop();
-	jQuery.ajax({
-		url: "data/name.php?wait=1",
-		timeout: 500,
-		error: function(request, status) {
-			ok( status != null, "status shouldn't be null in error handler" );
-			equal( "timeout", status );
-			start();
-		}
-	});
-});
-*/
-
-test("data option: evaluate function values (#2806)", function() {
-	stop();
-	jQuery.ajax({
-		url: "data/echoQuery.php",
-		data: {
-			key: function() {
-				return "value";
-			}
-		},
-		success: function(result) {
-			equal( result, "key=value" );
-			start();
-		}
-	});
-});
-
-test("data option: empty bodies for non-GET requests", function() {
-	stop();
-	jQuery.ajax({
-		url: "data/echoData.php",
-		data: undefined,
-		type: "post",
-		success: function(result) {
-			equal( result, "" );
-			start();
-		}
-	});
-});
-
-var ifModifiedNow = new Date();
-
-jQuery.each( { " (cache)": true, " (no cache)": false }, function( label, cache ) {
-
-	test("jQuery.ajax - If-Modified-Since support" + label, function() {
-		expect( 3 );
-
-		stop();
-
-		var url = "data/if_modified_since.php?ts=" + ifModifiedNow++;
-
-		jQuery.ajax({
-			url: url,
-			ifModified: true,
-			cache: cache,
-			success: function(data, status) {
-				equal(status, "success" );
-
-				jQuery.ajax({
-					url: url,
-					ifModified: true,
-					cache: cache,
-					success: function(data, status) {
-						if ( data === "FAIL" ) {
-							ok(jQuery.browser.opera, "Opera is incapable of doing .setRequestHeader('If-Modified-Since').");
-							ok(jQuery.browser.opera, "Opera is incapable of doing .setRequestHeader('If-Modified-Since').");
-						} else {
-							equal(status, "notmodified");
-							ok(data == null, "response body should be empty");
-						}
-						start();
-			        },
-					error: function() {
-						// Do this because opera simply refuses to implement 304 handling :(
-						// A feature-driven way of detecting this would be appreciated
-						// See: http://gist.github.com/599419
-						ok(jQuery.browser.opera, "error");
-						ok(jQuery.browser.opera, "error");
-						start();
+		ajaxTest( "jQuery.ajax() - JSONP - POST" + label, 3, function( assert ) {
+			return [
+				{
+					type: "POST",
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (POST, no callback)" );
 					}
-				});
-			},
-			error: function() {
-				equal(false, "error");
-				// Do this because opera simply refuses to implement 304 handling :(
-				// A feature-driven way of detecting this would be appreciated
-				// See: http://gist.github.com/599419
-				ok(jQuery.browser.opera, "error");
-				start();
-			}
-		});
-	});
-
-	test("jQuery.ajax - Etag support" + label, function() {
-		expect( 3 );
-
-		stop();
-
-		var url = "data/etag.php?ts=" + ifModifiedNow++;
-
-		jQuery.ajax({
-			url: url,
-			ifModified: true,
-			cache: cache,
-			success: function(data, status) {
-				equal(status, "success" );
-
-				jQuery.ajax({
-					url: url,
-					ifModified: true,
-					cache: cache,
-					success: function(data, status) {
-						if ( data === "FAIL" ) {
-							ok(jQuery.browser.opera, "Opera is incapable of doing .setRequestHeader('If-None-Match').");
-							ok(jQuery.browser.opera, "Opera is incapable of doing .setRequestHeader('If-None-Match').");
-						} else {
-							equal(status, "notmodified");
-							ok(data == null, "response body should be empty");
-						}
-						start();
-			        },
-			        error: function() {
-						// Do this because opera simply refuses to implement 304 handling :(
-						// A feature-driven way of detecting this would be appreciated
-						// See: http://gist.github.com/599419
-						ok(jQuery.browser.opera, "error");
-						ok(jQuery.browser.opera, "error");
-						start();
+				},
+				{
+					type: "POST",
+					url: baseURL + "mock.php?action=jsonp",
+					data: "callback=?",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (POST, data callback)" );
 					}
-				});
-			},
-			error: function() {
-				// Do this because opera simply refuses to implement 304 handling :(
-				// A feature-driven way of detecting this would be appreciated
-				// See: http://gist.github.com/599419
-				ok(jQuery.browser.opera, "error");
-				start();
-			}
-		});
-	});
-});
+				},
+				{
+					type: "POST",
+					url: baseURL + "mock.php?action=jsonp",
+					jsonp: "callback",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data[ "data" ], "JSON results returned (POST, data obj callback)" );
+					}
+				}
+			];
+		} );
 
-test("jQuery ajax - failing cross-domain", function() {
+		ajaxTest( "jQuery.ajax() - JSONP" + label, 3, function( assert ) {
+			return [
+				{
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: function( data ) {
+						assert.ok( data.data, "JSON results returned (GET, no callback)" );
+					}
+				},
+				{
+					create: function( options ) {
+						var request = jQuery.ajax( options ),
+							promise = request.then( function( data ) {
+								assert.ok( data.data, "first request: JSON results returned (GET, no callback)" );
+								request = jQuery.ajax( this ).done( function( data ) {
+									assert.ok( data.data, "this re-used: JSON results returned (GET, no callback)" );
+								} );
+								promise.abort = request.abort;
+								return request;
+							} );
+						promise.abort = request.abort;
+						return promise;
+					},
+					url: baseURL + "mock.php?action=jsonp",
+					dataType: "jsonp",
+					crossDomain: crossDomain,
+					success: true
+				}
+			];
+		} );
 
-	expect( 2 );
+	} );
 
-	stop();
-
-	var i = 2;
-
-	jQuery.ajax({
-		url: "http://somewebsitethatdoesnotexist-67864863574657654.com",
-		success: function(){ ok( false , "success" ); },
-		error: function(xhr,_,e){ ok( true , "file not found: " + xhr.status + " => " + e ); },
-		complete: function() { if ( ! --i ) start(); }
-	});
-
-	jQuery.ajax({
-		url: "http://www.google.com",
-		success: function(){ ok( false , "success" ); },
-		error: function(xhr,_,e){ ok( true , "access denied: " + xhr.status + " => " + e ); },
-		complete: function() { if ( ! --i ) start(); }
-	});
-
-});
-
-test("jQuery ajax - atom+xml", function() {
-
-	stop();
-
-	jQuery.ajax({
-		url: url( "data/atom+xml.php" ),
-		success: function(){ ok( true , "success" ); },
-		error: function(){ ok( false , "error" ); },
-		complete: function() { start(); }
-	});
-
-});
-
-test( "jQuery.ajax - Location object as url (#7531)", 1, function () {
-	var success = false;
-	try {
-		var xhr = jQuery.ajax({ url: window.location });
-		success = true;
-		xhr.abort();
-	} catch (e) {}
-
-	ok( success, "document.location did not generate exception" );
-});
-
-test( "jQuery.ajax - Context with circular references (#9887)", 2, function () {
-	var success = false,
-		context = {};
-	context.field = context;
-	try {
-		success = !jQuery.ajax( "non-existing", {
-			context: context,
-			beforeSend: function() {
-				ok( this === context, "context was not deep extended" );
-				return false;
-			}
-		});
-	} catch (e) { console.log( e ); }
-	ok( success, "context with circular reference did not generate an exception" );
-});
-
-test( "jQuery.ajax - statusText" , 3, function() {
-	stop();
-	jQuery.ajax( url( "data/statusText.php?status=200&text=Hello" ) ).done(function( _, statusText, jqXHR ) {
-		strictEqual( statusText, "success", "callback status text ok for success" );
-		ok( jqXHR.statusText === "Hello" || jQuery.browser.safari && jqXHR.statusText === "OK", "jqXHR status text ok for success (" + jqXHR.statusText + ")" );
-		jQuery.ajax( url( "data/statusText.php?status=404&text=World" ) ).fail(function( jqXHR, statusText ) {
-			strictEqual( statusText, "error", "callback status text ok for error" );
-			// ok( jqXHR.statusText === "World" || jQuery.browser.safari && jqXHR.statusText === "Not Found", "jqXHR status text ok for error (" + jqXHR.statusText + ")" );
-			start();
-		});
-	});
-});
-
-test( "jQuery.ajax - statusCode" , function() {
-
-	var count = 12;
-
-	expect( 20 );
-	stop();
-
-	function countComplete() {
-		if ( ! --count ) {
-			start();
-		}
-	}
-
-	function createStatusCodes( name , isSuccess ) {
-		name = "Test " + name + " " + ( isSuccess ? "success" : "error" );
+	ajaxTest( "jQuery.ajax() - script, Remote", 2, function( assert ) {
 		return {
-			200: function() {
-				ok( isSuccess , name );
+			setup: function() {
+				Globals.register( "testBar" );
 			},
-			404: function() {
-				ok( ! isSuccess , name );
+			url: window.location.href.replace( /[^\/]*$/, "" ) + baseURL + "mock.php?action=testbar",
+			dataType: "script",
+			success: function() {
+				assert.strictEqual( window[ "testBar" ], "bar", "Script results returned (GET, no callback)" );
 			}
 		};
-	}
+	} );
 
-	jQuery.each( {
-		"data/name.html": true,
-		"data/someFileThatDoesNotExist.html": false
-	} , function( uri , isSuccess ) {
-
-		jQuery.ajax( url( uri ) , {
-			statusCode: createStatusCodes( "in options" , isSuccess ),
-			complete: countComplete
-		});
-
-		jQuery.ajax( url( uri ) , {
-			complete: countComplete
-		}).statusCode( createStatusCodes( "immediately with method" , isSuccess ) );
-
-		jQuery.ajax( url( uri ) , {
-			complete: function(jqXHR) {
-				jqXHR.statusCode( createStatusCodes( "on complete" , isSuccess ) );
-				countComplete();
+	ajaxTest( "jQuery.ajax() - script, Remote with POST", 3, function( assert ) {
+		return {
+			setup: function() {
+				Globals.register( "testBar" );
+			},
+			url: window.location.href.replace( /[^\/]*$/, "" ) + baseURL + "mock.php?action=testbar",
+			type: "POST",
+			dataType: "script",
+			success: function( data, status ) {
+				assert.strictEqual( window[ "testBar" ], "bar", "Script results returned (POST, no callback)" );
+				assert.strictEqual( status, "success", "Script results returned (POST, no callback)" );
 			}
-		});
+		};
+	} );
 
-		jQuery.ajax( url( uri ) , {
-			complete: function(jqXHR) {
-				setTimeout(function() {
-					jqXHR.statusCode( createStatusCodes( "very late binding" , isSuccess ) );
-					countComplete();
-				} , 100 );
+	ajaxTest( "jQuery.ajax() - script, Remote with scheme-less URL", 2, function( assert ) {
+		return {
+			setup: function() {
+				Globals.register( "testBar" );
+			},
+			url: window.location.href.replace( /[^\/]*$/, "" ).replace( /^.*?\/\//, "//" ) + baseURL + "mock.php?action=testbar",
+			dataType: "script",
+			success: function() {
+				assert.strictEqual( window[ "testBar" ], "bar", "Script results returned (GET, no callback)" );
 			}
-		});
+		};
+	} );
 
-		jQuery.ajax( url( uri ) , {
-			statusCode: createStatusCodes( "all (options)" , isSuccess ),
-			complete: function(jqXHR) {
-				jqXHR.statusCode( createStatusCodes( "all (on complete)" , isSuccess ) );
-				setTimeout(function() {
-					jqXHR.statusCode( createStatusCodes( "all (very late binding)" , isSuccess ) );
-					countComplete();
-				} , 100 );
+	ajaxTest( "jQuery.ajax() - malformed JSON", 2, function( assert ) {
+		return {
+			url: baseURL + "badjson.js",
+			dataType: "json",
+			error: function( xhr, msg, detailedMsg ) {
+				assert.strictEqual( msg, "parsererror", "A parse error occurred." );
+				assert.ok( /(invalid|error|exception)/i.test( detailedMsg ), "Detailed parsererror message provided" );
 			}
-		}).statusCode( createStatusCodes( "all (immediately with method)" , isSuccess ) );
+		};
+	} );
 
-		var testString = "";
+	ajaxTest( "jQuery.ajax() - script by content-type", 2, function() {
+		return [
+			{
+				url: baseURL + "mock.php?action=script",
+				data: {
+					"header": "script"
+				},
+				success: true
+			},
+			{
+				url: baseURL + "mock.php?action=script",
+				data: {
+					"header": "ecma"
+				},
+				success: true
+			}
+		];
+	} );
 
-		jQuery.ajax( url( uri ), {
-			success: function( a , b , jqXHR ) {
-				ok( isSuccess , "success" );
-				var statusCode = {};
-				statusCode[ jqXHR.status ] = function() {
-					testString += "B";
-				};
-				jqXHR.statusCode( statusCode );
-				testString += "A";
+	ajaxTest( "jQuery.ajax() - JSON by content-type", 5, function( assert ) {
+		return {
+			url: baseURL + "mock.php?action=json",
+			data: {
+				"header": "json",
+				"array": "1"
+			},
+			success: function( json ) {
+				assert.ok( json.length >= 2, "Check length" );
+				assert.strictEqual( json[ 0 ][ "name" ], "John", "Check JSON: first, name" );
+				assert.strictEqual( json[ 0 ][ "age" ], 21, "Check JSON: first, age" );
+				assert.strictEqual( json[ 1 ][ "name" ], "Peter", "Check JSON: second, name" );
+				assert.strictEqual( json[ 1 ][ "age" ], 25, "Check JSON: second, age" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - JSON by content-type disabled with options", 6, function( assert ) {
+		return {
+			url: url( "mock.php?action=json" ),
+			data: {
+				"header": "json",
+				"array": "1"
+			},
+			contents: {
+				"json": false
+			},
+			success: function( text ) {
+				assert.strictEqual( typeof text, "string", "json wasn't auto-determined" );
+				var json = JSON.parse( text );
+				assert.ok( json.length >= 2, "Check length" );
+				assert.strictEqual( json[ 0 ][ "name" ], "John", "Check JSON: first, name" );
+				assert.strictEqual( json[ 0 ][ "age" ], 21, "Check JSON: first, age" );
+				assert.strictEqual( json[ 1 ][ "name" ], "Peter", "Check JSON: second, name" );
+				assert.strictEqual( json[ 1 ][ "age" ], 25, "Check JSON: second, age" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - simple get", 1, function( assert ) {
+		return {
+			type: "GET",
+			url: url( "mock.php?action=name&name=foo" ),
+			success: function( msg ) {
+				assert.strictEqual( msg, "bar", "Check for GET" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - simple post", 1, function( assert ) {
+		return {
+			type: "POST",
+			url: url( "mock.php?action=name" ),
+			data: "name=peter",
+			success: function( msg ) {
+				assert.strictEqual( msg, "pan", "Check for POST" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - data option - empty bodies for non-GET requests", 1, function( assert ) {
+		return {
+			url: baseURL + "mock.php?action=echoData",
+			data: undefined,
+			type: "post",
+			success: function( result ) {
+				assert.strictEqual( result, "" );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - data - x-www-form-urlencoded (gh-2658)", 1, function( assert ) {
+		return {
+			url: "bogus.html",
+			data: { devo: "A Beautiful World" },
+			type: "post",
+			beforeSend: function( _, s ) {
+				assert.strictEqual( s.data, "devo=A+Beautiful+World", "data is '+'-encoded" );
+				return false;
+			},
+			error: true
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - data - text/plain (gh-2658)", 1, function( assert ) {
+		return {
+			url: "bogus.html",
+			data: { devo: "A Beautiful World" },
+			type: "post",
+			contentType: "text/plain",
+			beforeSend: function( _, s ) {
+				assert.strictEqual( s.data, "devo=A%20Beautiful%20World", "data is %20-encoded" );
+				return false;
+			},
+			error: true
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - data - no processing POST", 1, function( assert ) {
+		return {
+			url: "bogus.html",
+			data: { devo: "A Beautiful World" },
+			type: "post",
+			contentType: "x-special-sauce",
+			processData: false,
+			beforeSend: function( _, s ) {
+				assert.deepEqual( s.data, { devo: "A Beautiful World" }, "data is not processed" );
+				return false;
+			},
+			error: true
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - data - no processing GET", 1, function( assert ) {
+		return {
+			url: "bogus.html",
+			data: { devo: "A Beautiful World" },
+			type: "get",
+			contentType: "x-something-else",
+			processData: false,
+			beforeSend: function( _, s ) {
+				assert.deepEqual( s.data, { devo: "A Beautiful World" }, "data is not processed" );
+				return false;
+			},
+			error: true
+		};
+	} );
+
+		ajaxTest( "jQuery.ajax() - data - process string with GET", 2, function( assert ) {
+		return {
+			url: "bogus.html",
+			data: "a=1&b=2",
+			type: "get",
+			contentType: "x-something-else",
+			processData: false,
+			beforeSend: function( _, s ) {
+				assert.equal( s.url, "bogus.html?a=1&b=2", "added data to url" );
+				assert.equal( s.data, undefined, "removed data from settings" );
+				return false;
+			},
+			error: true
+		};
+	} );
+
+	var ifModifiedNow = new Date();
+
+	jQuery.each(
+		/* jQuery.each arguments start */
+		{
+			" (cache)": true,
+			" (no cache)": false
+		},
+		function( label, cache ) {
+			jQuery.each(
+				{
+					"If-Modified-Since": "mock.php?action=ims",
+					"Etag": "mock.php?action=etag"
+				},
+				function( type, url ) {
+					url = baseURL + url + "&ts=" + ifModifiedNow++;
+					QUnit.asyncTest( "jQuery.ajax() - " + type + " support" + label, 4, function( assert ) {
+						jQuery.ajax( {
+							url: url,
+							ifModified: true,
+							cache: cache,
+							success: function( _, status ) {
+								assert.strictEqual( status, "success", "Initial status is 'success'" );
+								jQuery.ajax( {
+									url: url,
+									ifModified: true,
+									cache: cache,
+									success: function( data, status, jqXHR ) {
+										assert.strictEqual( status, "notmodified", "Following status is 'notmodified'" );
+										assert.strictEqual( jqXHR.status, 304, "XHR status is 304" );
+										assert.equal( data, null, "no response body is given" );
+									},
+									complete: function() {
+										QUnit.start();
+									}
+								} );
+							}
+						} );
+					} );
+				}
+			);
+		}
+		/* jQuery.each arguments end */
+	);
+
+	ajaxTest( "jQuery.ajax() - failing cross-domain (non-existing)", 1, function( assert ) {
+		return {
+
+			// see RFC 2606
+			url: "http://example.invalid",
+			error: function( xhr, _, e ) {
+				assert.ok( true, "file not found: " + xhr.status + " => " + e );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - failing cross-domain", 1, function( assert ) {
+		return {
+			url: "http://" + externalHost,
+			error: function( xhr, _, e ) {
+				assert.ok( true, "access denied: " + xhr.status + " => " + e );
+			}
+		};
+	} );
+
+	ajaxTest( "jQuery.ajax() - atom+xml", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=atom" ),
+			success: function() {
+				assert.ok( true, "success" );
+			}
+		};
+	} );
+
+	QUnit.asyncTest( "jQuery.ajax() - statusText", 3, function( assert ) {
+		jQuery.ajax( url( "mock.php?action=status&code=200&text=Hello" ) ).done( function( _, statusText, jqXHR ) {
+			assert.strictEqual( statusText, "success", "callback status text ok for success" );
+			assert.ok( jqXHR.statusText === "Hello" || jqXHR.statusText === "OK", "jqXHR status text ok for success (" + jqXHR.statusText + ")" );
+			jQuery.ajax( url( "mock.php?action=status&code=404&text=World" ) ).fail( function( jqXHR, statusText ) {
+				assert.strictEqual( statusText, "error", "callback status text ok for error" );
+				QUnit.start();
+			} );
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.ajax() - statusCode", 20, function( assert ) {
+
+		var count = 12;
+
+		function countComplete() {
+			if ( !--count ) {
+				QUnit.start();
+			}
+		}
+
+		function createStatusCodes( name, isSuccess ) {
+			name = "Test " + name + " " + ( isSuccess ? "success" : "error" );
+			return {
+				200: function() {
+					assert.ok( isSuccess, name );
+				},
+				404: function() {
+					assert.ok( !isSuccess, name );
+				}
+			};
+		}
+
+		jQuery.each(
+			/* jQuery.each arguments start */
+			{
+				"name.html": true,
+				"404.txt": false
+			},
+			function( uri, isSuccess ) {
+				jQuery.ajax( url( uri ), {
+					statusCode: createStatusCodes( "in options", isSuccess ),
+					complete: countComplete
+				} );
+
+				jQuery.ajax( url( uri ), {
+					complete: countComplete
+				} ).statusCode( createStatusCodes( "immediately with method", isSuccess ) );
+
+				jQuery.ajax( url( uri ), {
+					complete: function( jqXHR ) {
+						jqXHR.statusCode( createStatusCodes( "on complete", isSuccess ) );
+						countComplete();
+					}
+				} );
+
+				jQuery.ajax( url( uri ), {
+					complete: function( jqXHR ) {
+						setTimeout( function() {
+							jqXHR.statusCode( createStatusCodes( "very late binding", isSuccess ) );
+							countComplete();
+						}, 100 );
+					}
+				} );
+
+				jQuery.ajax( url( uri ), {
+					statusCode: createStatusCodes( "all (options)", isSuccess ),
+					complete: function( jqXHR ) {
+						jqXHR.statusCode( createStatusCodes( "all (on complete)", isSuccess ) );
+						setTimeout( function() {
+							jqXHR.statusCode( createStatusCodes( "all (very late binding)", isSuccess ) );
+							countComplete();
+						}, 100 );
+					}
+				} ).statusCode( createStatusCodes( "all (immediately with method)", isSuccess ) );
+
+				var testString = "";
+
+				jQuery.ajax( url( uri ), {
+					success: function( a, b, jqXHR ) {
+						assert.ok( isSuccess, "success" );
+						var statusCode = {};
+						statusCode[ jqXHR.status ] = function() {
+							testString += "B";
+						};
+						jqXHR.statusCode( statusCode );
+						testString += "A";
+					},
+					error: function( jqXHR ) {
+						assert.ok( !isSuccess, "error" );
+						var statusCode = {};
+						statusCode[ jqXHR.status ] = function() {
+							testString += "B";
+						};
+						jqXHR.statusCode( statusCode );
+						testString += "A";
+					},
+					complete: function() {
+						assert.strictEqual(
+							testString,
+							"AB",
+							"Test statusCode callbacks are ordered like " + ( isSuccess ? "success" :  "error" ) + " callbacks"
+						);
+						countComplete();
+					}
+				} );
+
+			}
+			/* jQuery.each arguments end*/
+		);
+	} );
+
+	ajaxTest( "jQuery.ajax() - transitive conversions", 8, function( assert ) {
+		return [
+			{
+				url: url( "mock.php?action=json" ),
+				converters: {
+					"json myJson": function( data ) {
+						assert.ok( true, "converter called" );
+						return data;
+					}
+				},
+				dataType: "myJson",
+				success: function() {
+					assert.ok( true, "Transitive conversion worked" );
+					assert.strictEqual( this.dataTypes[ 0 ], "text", "response was retrieved as text" );
+					assert.strictEqual( this.dataTypes[ 1 ], "myjson", "request expected myjson dataType" );
+				}
+			},
+			{
+				url: url( "mock.php?action=json" ),
+				converters: {
+					"json myJson": function( data ) {
+						assert.ok( true, "converter called (*)" );
+						return data;
+					}
+				},
+				contents: false, /* headers are wrong so we ignore them */
+				dataType: "* myJson",
+				success: function() {
+					assert.ok( true, "Transitive conversion worked (*)" );
+					assert.strictEqual( this.dataTypes[ 0 ], "text", "response was retrieved as text (*)" );
+					assert.strictEqual( this.dataTypes[ 1 ], "myjson", "request expected myjson dataType (*)" );
+				}
+			}
+		];
+	} );
+
+	ajaxTest( "jQuery.ajax() - overrideMimeType", 2, function( assert ) {
+		return [
+			{
+				url: url( "mock.php?action=json" ),
+				beforeSend: function( xhr ) {
+					xhr.overrideMimeType( "application/json" );
+				},
+				success: function( json ) {
+					assert.ok( json.data, "Mimetype overridden using beforeSend" );
+				}
+			},
+			{
+				url: url( "mock.php?action=json" ),
+				mimeType: "application/json",
+				success: function( json ) {
+					assert.ok( json.data, "Mimetype overridden using mimeType option" );
+				}
+			}
+		];
+	} );
+
+	ajaxTest( "jQuery.ajax() - empty json gets to error callback instead of success callback.", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=echoData" ),
+			error: function( _, __, error ) {
+				assert.equal( typeof error === "object", true,  "Didn't get back error object for empty json response" );
+			},
+			dataType: "json"
+		};
+	} );
+
+	ajaxTest( "#2688 - jQuery.ajax() - beforeSend, cancel request", 2, function( assert ) {
+		return {
+			create: function() {
+				return jQuery.ajax( {
+					url: url( "name.html" ),
+					beforeSend: function() {
+						assert.ok( true, "beforeSend got called, canceling" );
+						return false;
+					},
+					success: function() {
+						assert.ok( false, "request didn't get canceled" );
+					},
+					complete: function() {
+						assert.ok( false, "request didn't get canceled" );
+					},
+					error: function() {
+						assert.ok( false, "request didn't get canceled" );
+					}
+				} );
+			},
+			fail: function( _, reason ) {
+				assert.strictEqual( reason, "canceled", "canceled request must fail with 'canceled' status text" );
+			}
+		};
+	} );
+
+	ajaxTest( "#2806 - jQuery.ajax() - data option - evaluate function values", 1, function( assert ) {
+		return {
+			url: baseURL + "mock.php?action=echoQuery",
+			data: {
+				key: function() {
+					return "value";
+				}
+			},
+			success: function( result ) {
+				assert.strictEqual( result, "action=echoQuery&key=value" );
+			}
+		};
+	} );
+
+	QUnit.test( "#7531 - jQuery.ajax() - Location object as url", function( assert ) {
+		assert.expect( 1 );
+
+		var xhr,
+			success = false;
+		try {
+			xhr = jQuery.ajax( {
+				url: window.location
+			} );
+			success = true;
+			xhr.abort();
+		} catch ( e ) {
+
+		}
+		assert.ok( success, "document.location did not generate exception" );
+	} );
+
+	jQuery.each( [ " - Same Domain", " - Cross Domain" ], function( crossDomain, label ) {
+		ajaxTest( "#7578 - jQuery.ajax() - JSONP - default for cache option" + label, 1, function( assert ) {
+			return {
+				url: baseURL + "mock.php?action=jsonp",
+				dataType: "jsonp",
+				crossDomain: crossDomain,
+				beforeSend: function() {
+					assert.strictEqual( this.cache, false, "cache must be false on JSON request" );
+					return false;
+				},
+				error: true
+			};
+		} );
+	} );
+
+	ajaxTest( "#8107 - jQuery.ajax() - multiple method signatures introduced in 1.5", 4, function( assert ) {
+		return [
+			{
+				create: function() {
+					return jQuery.ajax();
+				},
+				done: function() {
+					assert.ok( true, "With no arguments" );
+				}
+			},
+			{
+				create: function() {
+					return jQuery.ajax( baseURL + "name.html" );
+				},
+				done: function() {
+					assert.ok( true, "With only string URL argument" );
+				}
+			},
+			{
+				create: function() {
+					return jQuery.ajax( baseURL + "name.html", {} );
+				},
+				done: function() {
+					assert.ok( true, "With string URL param and map" );
+				}
+			},
+			{
+				create: function( options ) {
+					return jQuery.ajax( options );
+				},
+				url: baseURL + "name.html",
+				success: function() {
+					assert.ok( true, "With only map" );
+				}
+			}
+		];
+	} );
+
+	jQuery.each( [ " - Same Domain", " - Cross Domain" ], function( crossDomain, label ) {
+		ajaxTest( "#8205 - jQuery.ajax() - JSONP - re-use callbacks name" + label, 4, function( assert ) {
+			return {
+				url: baseURL + "mock.php?action=jsonp",
+				dataType: "jsonp",
+				crossDomain: crossDomain,
+				beforeSend: function( jqXHR, s ) {
+					s.callback = s.jsonpCallback;
+
+					assert.ok( this.callback in window, "JSONP callback name is in the window" );
+				},
+				success: function() {
+					var previous = this;
+
+					assert.strictEqual(
+						previous.jsonpCallback,
+						undefined,
+						"jsonpCallback option is set back to default in callbacks"
+					);
+
+					assert.ok(
+						!( this.callback in window ),
+						"JSONP callback name was removed from the window"
+					);
+
+					jQuery.ajax( {
+						url: baseURL + "mock.php?action=jsonp",
+						dataType: "jsonp",
+						crossDomain: crossDomain,
+						beforeSend: function() {
+							assert.strictEqual( this.jsonpCallback, previous.callback, "JSONP callback name is re-used" );
+							return false;
+						}
+					} );
+				}
+			};
+		} );
+	} );
+
+	QUnit.test( "#9887 - jQuery.ajax() - Context with circular references (#9887)", function( assert ) {
+		assert.expect( 2 );
+
+		var success = false,
+			context = {};
+		context.field = context;
+		try {
+			jQuery.ajax( "non-existing", {
+				context: context,
+				beforeSend: function() {
+					assert.ok( this === context, "context was not deep extended" );
+					return false;
+				}
+			} );
+			success = true;
+		} catch ( e ) {
+			console.log( e );
+		}
+		assert.ok( success, "context with circular reference did not generate an exception" );
+	} );
+
+	jQuery.each( [ "as argument", "in settings object" ], function( inSetting, title ) {
+
+		function request( assert, url, test ) {
+			return {
+				create: function() {
+					return jQuery.ajax( inSetting ? { url: url } : url );
+				},
+				done: function() {
+					assert.ok( true, ( test || url ) + " " + title );
+				}
+			};
+		}
+
+		ajaxTest( "#10093 - jQuery.ajax() - falsy url " + title, 4, function( assert ) {
+			return [
+				request( assert, "", "empty string" ),
+				request( assert, false ),
+				request( assert, null ),
+				request( assert, undefined )
+			];
+		} );
+	} );
+
+	ajaxTest( "#11151 - jQuery.ajax() - parse error body", 2, function( assert ) {
+		return {
+			url: url( "mock.php?action=error&json=1" ),
+			dataFilter: function( string ) {
+				assert.ok( false, "dataFilter called" );
+				return string;
 			},
 			error: function( jqXHR ) {
-				ok( ! isSuccess , "error" );
-				var statusCode = {};
-				statusCode[ jqXHR.status ] = function() {
-					testString += "B";
+				assert.strictEqual( jqXHR.responseText, "{ \"code\": 40, \"message\": \"Bad Request\" }", "Error body properly set" );
+				assert.deepEqual( jqXHR.responseJSON, { code: 40, message: "Bad Request" }, "Error body properly parsed" );
+			}
+		};
+	} );
+
+	ajaxTest( "#11426 - jQuery.ajax() - loading binary data shouldn't throw an exception in IE", 1, function( assert ) {
+		return {
+			url: url( "1x1.jpg" ),
+			success: function( data ) {
+				assert.ok( data === undefined || /JFIF/.test( data ), "success callback reached" );
+			}
+		};
+	} );
+
+if ( typeof window.ArrayBuffer === "undefined" || typeof new XMLHttpRequest().responseType !== "string" ) {
+
+	QUnit.skip( "No ArrayBuffer support in XHR", jQuery.noop );
+} else {
+
+	// No built-in support for binary data, but it's easy to add via a prefilter
+	jQuery.ajaxPrefilter( "arraybuffer", function( s ) {
+		s.xhrFields = { responseType: "arraybuffer" };
+		s.responseFields.arraybuffer = "response";
+		s.converters[ "binary arraybuffer" ] = true;
+	} );
+
+	ajaxTest( "gh-2498 - jQuery.ajax() - binary data shouldn't throw an exception", 2, function( assert ) {
+		return {
+			url: url( "1x1.jpg" ),
+			dataType: "arraybuffer",
+			success: function( data, s, jqxhr ) {
+				assert.ok( data instanceof window.ArrayBuffer, "correct data type" );
+				assert.ok( jqxhr.response instanceof window.ArrayBuffer, "data in jQXHR" );
+			}
+		};
+	} );
+}
+
+	QUnit.asyncTest( "#11743 - jQuery.ajax() - script, throws exception", 1, function( assert ) {
+		var onerror = window.onerror;
+		window.onerror = function() {
+			assert.ok( true, "Exception thrown" );
+			window.onerror = onerror;
+			QUnit.start();
+		};
+		jQuery.ajax( {
+			url: baseURL + "badjson.js",
+			dataType: "script",
+			throws: true
+		} );
+	} );
+
+	jQuery.each( [ "method", "type" ], function( _, globalOption ) {
+		function request( assert, option ) {
+			var options = {
+					url: url( "mock.php?action=echoData" ),
+					data: "hello",
+					success: function( msg ) {
+						assert.strictEqual( msg, "hello", "Check for POST (no override)" );
+					}
 				};
-				jqXHR.statusCode( statusCode );
-				testString += "A";
+			if ( option ) {
+				options[ option ] = "GET";
+				options.success = function( msg ) {
+					assert.strictEqual( msg, "", "Check for no POST (overriding with " + option + ")" );
+				};
+			}
+			return options;
+		}
+
+		ajaxTest(
+			"#12004 - jQuery.ajax() - method is an alias of type - " +
+			globalOption + " set globally", 3,
+			function( assert ) {
+				return {
+					setup: function() {
+						var options = {};
+						options[ globalOption ] = "POST";
+						jQuery.ajaxSetup( options );
+					},
+					requests: [
+						request( assert, "type" ),
+						request( assert, "method" ),
+						request( assert )
+					]
+				};
+			}
+		);
+	} );
+
+	ajaxTest( "#13276 - jQuery.ajax() - compatibility between XML documents from ajax requests and parsed string", 1, function( assert ) {
+		return {
+			url: baseURL + "dashboard.xml",
+			dataType: "xml",
+			success: function( ajaxXML ) {
+				var parsedXML = jQuery( jQuery.parseXML( "<tab title=\"Added\">blibli</tab>" ) ).find( "tab" );
+				ajaxXML = jQuery( ajaxXML );
+				try {
+					ajaxXML.find( "infowindowtab" ).append( parsedXML );
+				} catch ( e ) {
+					assert.strictEqual( e, undefined, "error" );
+					return;
+				}
+				assert.strictEqual( ajaxXML.find( "tab" ).length, 3, "Parsed node was added properly" );
+			}
+		};
+	} );
+
+	ajaxTest( "#13292 - jQuery.ajax() - converter is bypassed for 204 requests", 3, function( assert ) {
+		return {
+			url: baseURL + "mock.php?action=status&code=204&text=No+Content",
+			dataType: "testing",
+			converters: {
+				"* testing": function() {
+					throw "converter was called";
+				}
 			},
-			complete: function() {
-				strictEqual( testString , "AB" , "Test statusCode callbacks are ordered like " +
-						( isSuccess ? "success" :  "error" ) + " callbacks" );
-				countComplete();
+			success: function( data, status, jqXHR ) {
+				assert.strictEqual( jqXHR.status, 204, "status code is 204" );
+				assert.strictEqual( status, "nocontent", "status text is 'nocontent'" );
+				assert.strictEqual( data, undefined, "data is undefined" );
+			},
+			error: function( _, status, error ) {
+				assert.ok( false, "error" );
+				assert.strictEqual( status, "parsererror", "Parser Error" );
+				assert.strictEqual( error, "converter was called", "Converter was called" );
+			}
+		};
+	} );
+
+	ajaxTest( "#13388 - jQuery.ajax() - responseXML", 3, function( assert ) {
+		return {
+			url: url( "with_fries.xml" ),
+			dataType: "xml",
+			success: function( resp, _, jqXHR ) {
+				assert.notStrictEqual( resp, undefined, "XML document exists" );
+				assert.ok( "responseXML" in jqXHR, "jqXHR.responseXML exists" );
+				assert.strictEqual( resp, jqXHR.responseXML, "jqXHR.responseXML is set correctly" );
+			}
+		};
+	} );
+
+	ajaxTest( "#13922 - jQuery.ajax() - converter is bypassed for HEAD requests", 3, function( assert ) {
+		return {
+			url: baseURL + "mock.php?action=json",
+			method: "HEAD",
+			data: {
+				header: "yes"
+			},
+			converters: {
+				"text json": function() {
+					throw "converter was called";
+				}
+			},
+			success: function( data, status ) {
+				assert.ok( true, "success" );
+				assert.strictEqual( status, "nocontent", "data is undefined" );
+				assert.strictEqual( data, undefined, "data is undefined" );
+			},
+			error: function( _, status, error ) {
+				assert.ok( false, "error" );
+				assert.strictEqual( status, "parsererror", "Parser Error" );
+				assert.strictEqual( error, "converter was called", "Converter was called" );
+			}
+		};
+	} );
+
+	testIframe(
+		"#14379 - jQuery.ajax() on unload",
+		"ajax/onunload.html",
+		function( assert, jQuery, window, document, status ) {
+			assert.expect( 1 );
+			assert.strictEqual( status, "success", "Request completed" );
+		}
+	);
+
+	ajaxTest( "#14683 - jQuery.ajax() - Exceptions thrown synchronously by xhr.send should be caught", 4, function( assert ) {
+		return [ {
+			url: baseURL + "mock.php?action=echoData",
+			method: "POST",
+			data: {
+				toString: function() {
+					throw "Can't parse";
+				}
+			},
+			processData: false,
+			done: function( data ) {
+				assert.ok( false, "done: " + data );
+			},
+			fail: function( jqXHR, status, error ) {
+				assert.ok( true, "exception caught: " + error );
+				assert.strictEqual( jqXHR.status, 0, "proper status code" );
+				assert.strictEqual( status, "error", "proper status" );
+			}
+		}, {
+			url: "http://" + externalHost + ":80q",
+			done: function( data ) {
+				assert.ok( false, "done: " + data );
+			},
+			fail: function( _, status, error ) {
+				assert.ok( true, "fail: " + status + " - " + error );
+			}
+		} ];
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not xml, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"response": "<test/>"
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not xml"
+				);
+			}
+		};
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not xml, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"response": "<test/>"
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not xml"
+				);
+			}
+		};
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not json, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "test/jsontest",
+				"response": JSON.stringify( { test: "test" } )
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not json"
+				);
+			}
+		};
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not html, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "test/htmltest",
+				"response": "<p>test</p>"
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not html"
+				);
+			}
+		};
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not javascript, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "test/testjavascript",
+				"response": "alert(1)"
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not javascript"
+				);
+			}
+		};
+	} );
+
+	ajaxTest( "gh-2587 - when content-type not ecmascript, but looks like one", 1, function( assert ) {
+		return {
+			url: url( "mock.php?action=contentType" ),
+			data: {
+				contentType: "test/testjavascript",
+				"response": "alert(1)"
+			},
+			success: function( result ) {
+				assert.strictEqual(
+					typeof result,
+					"string",
+					"Should handle it as a string, not ecmascript"
+				);
+			}
+		};
+	} );
+
+//----------- jQuery.ajaxPrefilter()
+
+	ajaxTest( "jQuery.ajaxPrefilter() - abort", 1, function( assert ) {
+		return {
+			dataType: "prefix",
+			setup: function() {
+
+				// Ensure prefix does not throw an error
+				jQuery.ajaxPrefilter( "+prefix", function( options, _, jqXHR ) {
+					if ( options.abortInPrefilter ) {
+						jqXHR.abort();
+					}
+				} );
+			},
+			abortInPrefilter: true,
+			error: function() {
+				assert.ok( false, "error callback called" );
+			},
+			fail: function( _, reason ) {
+				assert.strictEqual( reason, "canceled", "Request aborted by the prefilter must fail with 'canceled' status text" );
+			}
+		};
+	} );
+
+//----------- jQuery.ajaxSetup()
+
+	QUnit.asyncTest( "jQuery.ajaxSetup()", 1, function( assert ) {
+		jQuery.ajaxSetup( {
+			url: url( "mock.php?action=name&name=foo" ),
+			success: function( msg ) {
+				assert.strictEqual( msg, "bar", "Check for GET" );
+				QUnit.start();
+			}
+		} );
+		jQuery.ajax();
+	} );
+
+	QUnit.asyncTest( "jQuery.ajaxSetup({ timeout: Number }) - with global timeout", 2, function( assert ) {
+		var passed = 0,
+			pass = function() {
+				assert.ok( passed++ < 2, "Error callback executed" );
+				if ( passed === 2 ) {
+					jQuery( document ).off( "ajaxError.setupTest" );
+					QUnit.start();
+				}
+			},
+			fail = function( a, b ) {
+				assert.ok( false, "Check for timeout failed " + a + " " + b );
+				QUnit.start();
+			};
+
+		jQuery( document ).on( "ajaxError.setupTest", pass );
+
+		jQuery.ajaxSetup( {
+			timeout: 1000
+		} );
+
+		jQuery.ajax( {
+			type: "GET",
+			url: url( "mock.php?action=wait&wait=5" ),
+			error: pass,
+			success: fail
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.ajaxSetup({ timeout: Number }) with localtimeout", 1, function( assert ) {
+		jQuery.ajaxSetup( {
+			timeout: 50
+		} );
+		jQuery.ajax( {
+			type: "GET",
+			timeout: 15000,
+			url: url( "mock.php?action=wait&wait=1" ),
+			error: function() {
+				assert.ok( false, "Check for local timeout failed" );
+				QUnit.start();
+			},
+			success: function() {
+				assert.ok( true, "Check for local timeout" );
+				QUnit.start();
+			}
+		} );
+	} );
+
+//----------- jQuery.domManip()
+
+	QUnit.test( "#11264 - jQuery.domManip() - no side effect because of ajaxSetup or global events", function( assert ) {
+		assert.expect( 1 );
+
+		jQuery.ajaxSetup( {
+			type: "POST"
+		} );
+
+		jQuery( document ).on( "ajaxStart ajaxStop", function() {
+			assert.ok( false, "Global event triggered" );
+		} );
+
+		jQuery( "#qunit-fixture" ).append( "<script src='" + baseURL + "mock.php?action=script'></script>" );
+
+		jQuery( document ).off( "ajaxStart ajaxStop" );
+	} );
+
+	QUnit.test(
+		"jQuery#load() - always use GET method even if it overrided through ajaxSetup (#11264)", 1,
+		function( assert ) {
+			var done = assert.async();
+
+			jQuery.ajaxSetup( {
+				type: "POST"
+			} );
+
+			jQuery( "#qunit-fixture" ).load( baseURL + "mock.php?action=echoMethod", function( method ) {
+				assert.equal( method, "GET" );
+				done();
+			} );
+		}
+	);
+
+	QUnit.test(
+		"jQuery#load() - should resolve with correct context", 2,
+		function( assert ) {
+			var done = assert.async();
+			var ps = jQuery( "<p></p><p></p>" );
+			var i = 0;
+
+			ps.appendTo( "#qunit-fixture" );
+
+			ps.load( baseURL + "mock.php?action=echoMethod", function() {
+				assert.strictEqual( this, ps[ i++ ] );
+
+				if ( i === 2 ) {
+					done();
+				}
+			} );
+		}
+	);
+
+	QUnit.test(
+		"#11402 - jQuery.domManip() - script in comments are properly evaluated", 2,
+		function( assert ) {
+			jQuery( "#qunit-fixture" ).load( baseURL + "cleanScript.html", assert.async() );
+		}
+	);
+
+//----------- jQuery.get()
+
+	QUnit.asyncTest( "jQuery.get( String, Hash, Function ) - parse xml and use text() on nodes", 2, function( assert ) {
+		jQuery.get( url( "dashboard.xml" ), function( xml ) {
+			var content = [];
+			jQuery( "tab", xml ).each( function() {
+				content.push( jQuery( this ).text() );
+			} );
+			assert.strictEqual( content[ 0 ], "blabla", "Check first tab" );
+			assert.strictEqual( content[ 1 ], "blublu", "Check second tab" );
+			QUnit.start();
+		} );
+	} );
+
+	QUnit.asyncTest( "#8277 - jQuery.get( String, Function ) - data in ajaxSettings", 1, function( assert ) {
+		jQuery.ajaxSetup( {
+			data: "helloworld"
+		} );
+		jQuery.get( url( "mock.php?action=echoQuery" ), function( data ) {
+			assert.ok( /helloworld$/.test( data ), "Data from ajaxSettings was used" );
+			QUnit.start();
+		} );
+	} );
+
+//----------- jQuery.getJSON()
+
+	QUnit.asyncTest( "jQuery.getJSON( String, Hash, Function ) - JSON array", 5, function( assert ) {
+		jQuery.getJSON(
+			url( "mock.php?action=json" ),
+			{
+				"array": "1"
+			},
+			function( json ) {
+				assert.ok( json.length >= 2, "Check length" );
+				assert.strictEqual( json[ 0 ][ "name" ], "John", "Check JSON: first, name" );
+				assert.strictEqual( json[ 0 ][ "age" ], 21, "Check JSON: first, age" );
+				assert.strictEqual( json[ 1 ][ "name" ], "Peter", "Check JSON: second, name" );
+				assert.strictEqual( json[ 1 ][ "age" ], 25, "Check JSON: second, age" );
+				QUnit.start();
+			}
+		);
+	} );
+
+	QUnit.asyncTest( "jQuery.getJSON( String, Function ) - JSON object", 2, function( assert ) {
+		jQuery.getJSON( url( "mock.php?action=json" ), function( json ) {
+			if ( json && json[ "data" ] ) {
+				assert.strictEqual( json[ "data" ][ "lang" ], "en", "Check JSON: lang" );
+				assert.strictEqual( json[ "data" ].length, 25, "Check JSON: length" );
+				QUnit.start();
+			}
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.getJSON( String, Function ) - JSON object with absolute url to local content", 2, function( assert ) {
+		jQuery.getJSON( window.location.href.replace( /[^\/]*$/, "" ) + url( "mock.php?action=json" ), function( json ) {
+			assert.strictEqual( json.data.lang, "en", "Check JSON: lang" );
+			assert.strictEqual( json.data.length, 25, "Check JSON: length" );
+			QUnit.start();
+		} );
+	} );
+
+//----------- jQuery.getScript()
+
+	QUnit.test( "jQuery.getScript( String, Function ) - with callback", 2,
+		function( assert ) {
+			var done = assert.async();
+
+			Globals.register( "testBar" );
+			jQuery.getScript( url( "mock.php?action=testbar" ), function() {
+				assert.strictEqual( window[ "testBar" ], "bar", "Check if script was evaluated" );
+				done();
+			} );
+		}
+	);
+
+	QUnit.test( "jQuery.getScript( String, Function ) - no callback", 1, function( assert ) {
+		Globals.register( "testBar" );
+		jQuery.getScript( url( "mock.php?action=testbar" ) ).done( assert.async() );
+	} );
+
+	QUnit.test( "#8082 - jQuery.getScript( String, Function ) - source as responseText", 2, function( assert ) {
+		var done = assert.async();
+
+		Globals.register( "testBar" );
+		jQuery.getScript( url( "mock.php?action=testbar" ), function( data, _, jqXHR ) {
+			assert.strictEqual( data, jqXHR.responseText, "Same-domain script requests returns the source of the script" );
+			done();
+		} );
+	} );
+
+	QUnit.test( "jQuery.getScript( Object ) - with callback", 2, function( assert ) {
+		var done = assert.async();
+
+		Globals.register( "testBar" );
+		jQuery.getScript( {
+			url: url( "mock.php?action=testbar" ),
+			success: function() {
+				assert.strictEqual( window[ "testBar" ], "bar", "Check if script was evaluated" );
+				done();
+			}
+		} );
+	} );
+
+	QUnit.test( "jQuery.getScript( Object ) - no callback", 1, function( assert ) {
+		Globals.register( "testBar" );
+		jQuery.getScript( { url: url( "mock.php?action=testbar" ) } ).done( assert.async() );
+	} );
+
+// //----------- jQuery.fn.load()
+
+	// check if load can be called with only url
+	QUnit.test( "jQuery.fn.load( String )", 2, function( assert ) {
+		jQuery.ajaxSetup( {
+			beforeSend: function() {
+				assert.strictEqual( this.type, "GET", "no data means GET request" );
+			}
+		} );
+		jQuery( "#first" ).load( baseURL + "name.html", assert.async() );
+	} );
+
+	QUnit.test( "jQuery.fn.load() - 404 error callbacks", function( assert ) {
+		assert.expect( 6 );
+		var done = assert.async();
+
+		addGlobalEvents( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxError", assert )();
+		jQuery( document ).ajaxStop( done );
+		jQuery( "<div/>" ).load( baseURL + "404.txt", function() {
+			assert.ok( true, "complete" );
+		} );
+	} );
+
+	// check if load can be called with url and null data
+	QUnit.test( "jQuery.fn.load( String, null )", 2, function( assert ) {
+		jQuery.ajaxSetup( {
+			beforeSend: function() {
+				assert.strictEqual( this.type, "GET", "no data means GET request" );
+			}
+		} );
+		jQuery( "#first" ).load( baseURL + "name.html", null, assert.async() );
+	} );
+
+	// check if load can be called with url and undefined data
+	QUnit.test( "jQuery.fn.load( String, undefined )", 2, function( assert ) {
+		jQuery.ajaxSetup( {
+			beforeSend: function() {
+				assert.strictEqual( this.type, "GET", "no data means GET request" );
+			}
+		} );
+		jQuery( "#first" ).load( baseURL + "name.html", undefined, assert.async() );
+	} );
+
+	// check if load can be called with only url
+	QUnit.asyncTest( "jQuery.fn.load( URL_SELECTOR )", 1, function( assert ) {
+		jQuery( "#first" ).load( baseURL + "test3.html div.user", function() {
+			assert.strictEqual( jQuery( this ).children( "div" ).length, 2, "Verify that specific elements were injected" );
+			QUnit.start();
+		} );
+	} );
+
+	// Selector should be trimmed to avoid leading spaces (#14773)
+	QUnit.asyncTest( "jQuery.fn.load( URL_SELECTOR with spaces )", 1, function( assert ) {
+		jQuery( "#first" ).load( baseURL + "test3.html   #superuser ", function() {
+			assert.strictEqual( jQuery( this ).children( "div" ).length, 1, "Verify that specific elements were injected" );
+			QUnit.start();
+		} );
+	} );
+
+	// Selector should be trimmed to avoid leading spaces (#14773)
+	// Selector should include any valid non-HTML whitespace (#3003)
+	QUnit.test( "jQuery.fn.load( URL_SELECTOR with non-HTML whitespace(#3003) )", function( assert ) {
+		assert.expect( 1 );
+		var done = assert.async();
+		jQuery( "#first" ).load( baseURL + "test3.html   #whitespace\\\\xA0 ", function() {
+			assert.strictEqual( jQuery( this ).children( "div" ).length, 1, "Verify that specific elements were injected" );
+			done();
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.fn.load( String, Function ) - simple: inject text into DOM", 2, function( assert ) {
+		jQuery( "#first" ).load( url( "name.html" ), function() {
+			assert.ok( /^ERROR/.test( jQuery( "#first" ).text() ), "Check if content was injected into the DOM" );
+			QUnit.start();
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.fn.load( String, Function ) - check scripts", 7, function( assert ) {
+		var verifyEvaluation = function() {
+			assert.strictEqual( window[ "testBar" ], "bar", "Check if script src was evaluated after load" );
+			assert.strictEqual( jQuery( "#ap" ).html(), "bar", "Check if script evaluation has modified DOM" );
+			QUnit.start();
+		};
+
+		Globals.register( "testFoo" );
+		Globals.register( "testBar" );
+
+		jQuery( "#first" ).load( url( "mock.php?action=testHTML&baseURL=" + baseURL ), function() {
+			assert.ok( jQuery( "#first" ).html().match( /^html text/ ), "Check content after loading html" );
+			assert.strictEqual( jQuery( "#foo" ).html(), "foo", "Check if script evaluation has modified DOM" );
+			assert.strictEqual( window[ "testFoo" ], "foo", "Check if script was evaluated after load" );
+			setTimeout( verifyEvaluation, 600 );
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.fn.load( String, Function ) - check file with only a script tag", 3, function( assert ) {
+		Globals.register( "testFoo" );
+
+		jQuery( "#first" ).load( url( "test2.html" ), function() {
+			assert.strictEqual( jQuery( "#foo" ).html(), "foo", "Check if script evaluation has modified DOM" );
+			assert.strictEqual( window[ "testFoo" ], "foo", "Check if script was evaluated after load" );
+			QUnit.start();
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.fn.load( String, Function ) - dataFilter in ajaxSettings", 2, function( assert ) {
+		jQuery.ajaxSetup( {
+			dataFilter: function() {
+				return "Hello World";
+			}
+		} );
+		jQuery( "<div/>" ).load( url( "name.html" ), function( responseText ) {
+			assert.strictEqual( jQuery( this ).html(), "Hello World", "Test div was filled with filtered data" );
+			assert.strictEqual( responseText, "Hello World", "Test callback receives filtered data" );
+			QUnit.start();
+		} );
+	} );
+
+	QUnit.asyncTest( "jQuery.fn.load( String, Object, Function )", 2, function( assert ) {
+		jQuery( "<div />" ).load( url( "mock.php?action=echoHtml" ), {
+			"bar": "ok"
+		}, function() {
+			var $node = jQuery( this );
+			assert.strictEqual( $node.find( "#method" ).text(), "POST", "Check method" );
+			assert.strictEqual( $node.find( "#data" ).text(), "bar=ok", "Check if data is passed correctly" );
+			QUnit.start();
+		} );
+	} );
+
+	QUnit.test( "jQuery.fn.load( String, String, Function )", 2, function( assert ) {
+		var done = assert.async();
+
+		jQuery( "<div />" ).load( url( "mock.php?action=echoHtml" ), "foo=3&bar=ok", function() {
+			var $node = jQuery( this );
+			assert.strictEqual( $node.find( "#method" ).text(), "GET", "Check method" );
+			assert.ok( $node.find( "#query" ).text().match( /foo=3&bar=ok/ ), "Check if a string of data is passed correctly" );
+			done();
+		} );
+	} );
+
+	QUnit.test( "jQuery.fn.load() - callbacks get the correct parameters", 8, function( assert ) {
+		var completeArgs = {};
+		var done = assert.async();
+
+		jQuery.ajaxSetup( {
+			success: function( _, status, jqXHR ) {
+				completeArgs[ this.url ] = [ jqXHR.responseText, status, jqXHR ];
+			},
+			error: function( jqXHR, status ) {
+				completeArgs[ this.url ] = [ jqXHR.responseText, status, jqXHR ];
 			}
 		} );
 
-	});
-});
-
-test("jQuery.ajax - transitive conversions", function() {
-
-	expect( 8 );
-
-	stop();
-
-	jQuery.when(
-
-		jQuery.ajax( url("data/json.php") , {
-			converters: {
-				"json myJson": function( data ) {
-					ok( true , "converter called" );
-					return data;
+		jQuery.when.apply(
+			jQuery,
+			jQuery.map( [
+				{
+					type: "success",
+					url: baseURL + "mock.php?action=echoQuery&arg=pop"
+				},
+				{
+					type: "error",
+					url: baseURL + "404.txt"
 				}
-			},
-			dataType: "myJson",
-			success: function() {
-				ok( true , "Transitive conversion worked" );
-				strictEqual( this.dataTypes[0] , "text" , "response was retrieved as text" );
-				strictEqual( this.dataTypes[1] , "myjson" , "request expected myjson dataType" );
-			}
-		}),
+			],
+			function( options ) {
+				return jQuery.Deferred( function( defer ) {
+					jQuery( "#foo" ).load( options.url, function() {
+						var args = arguments;
+						assert.strictEqual( completeArgs[ options.url ].length, args.length, "same number of arguments (" + options.type + ")" );
+						jQuery.each( completeArgs[ options.url ], function( i, value ) {
+							assert.strictEqual( args[ i ], value, "argument #" + i + " is the same (" + options.type + ")" );
+						} );
+						defer.resolve();
+					} );
+				} );
+			} )
+		).always( done );
+	} );
 
-		jQuery.ajax( url("data/json.php") , {
-			converters: {
-				"json myJson": function( data ) {
-					ok( true , "converter called (*)" );
-					return data;
+	QUnit.test( "#2046 - jQuery.fn.load( String, Function ) with ajaxSetup on dataType json", 1, function( assert ) {
+		var done = assert.async();
+
+		jQuery.ajaxSetup( {
+			dataType: "json"
+		} );
+		jQuery( document ).ajaxComplete( function( e, xml, s ) {
+			assert.strictEqual( s.dataType, "html", "Verify the load() dataType was html" );
+			jQuery( document ).off( "ajaxComplete" );
+			done();
+		} );
+		jQuery( "#first" ).load( baseURL + "test3.html" );
+	} );
+
+	QUnit.test( "#10524 - jQuery.fn.load() - data specified in ajaxSettings is merged in", 1, function( assert ) {
+		var done = assert.async();
+
+		var data = {
+			"baz": 1
+		};
+		jQuery.ajaxSetup( {
+			data: {
+				"foo": "bar"
+			}
+		} );
+		jQuery( "#foo" ).load( baseURL + "mock.php?action=echoQuery", data );
+		jQuery( document ).ajaxComplete( function( event, jqXHR, options ) {
+			assert.ok( ~options.data.indexOf( "foo=bar" ), "Data from ajaxSettings was used" );
+			done();
+		} );
+	} );
+
+// //----------- jQuery.post()
+
+	QUnit.test( "jQuery.post() - data", 3, function( assert ) {
+		var done = assert.async();
+
+		jQuery.when(
+			jQuery.post(
+				url( "mock.php?action=xml" ),
+				{
+					cal: "5-2"
+				},
+				function( xml ) {
+					jQuery( "math", xml ).each( function() {
+						assert.strictEqual( jQuery( "calculation", this ).text(), "5-2", "Check for XML" );
+						assert.strictEqual( jQuery( "result", this ).text(), "3", "Check for XML" );
+					} );
 				}
-			},
-			contents: false, /* headers are wrong so we ignore them */
-			dataType: "* myJson",
-			success: function() {
-				ok( true , "Transitive conversion worked (*)" );
-				strictEqual( this.dataTypes[0] , "text" , "response was retrieved as text (*)" );
-				strictEqual( this.dataTypes[1] , "myjson" , "request expected myjson dataType (*)" );
-			}
-		})
+			),
+			jQuery.ajax( {
+				url: url( "mock.php?action=echoData" ),
+				type: "POST",
+				data: {
+					"test": {
+						"length": 7,
+						"foo": "bar"
+					}
+				},
+				success: function( data ) {
+					assert.strictEqual( data, "test%5Blength%5D=7&test%5Bfoo%5D=bar", "Check if a sub-object with a length param is serialized correctly" );
+				}
+			} )
+		).always( done );
+	} );
 
-	).always(function() {
-		start();
-	});
+	QUnit.test( "jQuery.post( String, Hash, Function ) - simple with xml", 4, function( assert ) {
+		var done = assert.async();
 
-});
+		jQuery.when(
+			jQuery.post(
+				url( "mock.php?action=xml" ),
+				{
+					cal: "5-2"
+				},
+				function( xml ) {
+					jQuery( "math", xml ).each( function() {
+						assert.strictEqual( jQuery( "calculation", this ).text(), "5-2", "Check for XML" );
+						assert.strictEqual( jQuery( "result", this ).text(), "3", "Check for XML" );
+					} );
+				}
+			),
+			jQuery.post( url( "mock.php?action=xml&cal=5-2" ), {}, function( xml ) {
+				jQuery( "math", xml ).each( function() {
+					assert.strictEqual( jQuery( "calculation", this ).text(), "5-2", "Check for XML" );
+					assert.strictEqual( jQuery( "result", this ).text(), "3", "Check for XML" );
+				} );
+			} )
+		).always( function() {
+			done();
+		} );
+	} );
 
-test("jQuery.ajax - overrideMimeType", function() {
+	QUnit.test( "jQuery[get|post]( options ) - simple with xml", 2, function( assert ) {
+		var done = assert.async();
 
-	expect( 2 );
+		jQuery.when.apply( jQuery,
+			jQuery.map( [ "get", "post" ], function( method ) {
+				return jQuery[ method ]( {
+					url: url( "mock.php?action=xml" ),
+					data: {
+						cal: "5-2"
+					},
+					success: function( xml ) {
+						jQuery( "math", xml ).each( function() {
+							assert.strictEqual( jQuery( "result", this ).text(), "3", "Check for XML" );
+						} );
+					}
+				} );
+			} )
+		).always( function() {
+			done();
+		} );
+	} );
 
-	stop();
+//----------- jQuery.active
 
-	jQuery.when(
+	QUnit.test( "jQuery.active", function( assert ) {
+		assert.expect( 1 );
+		assert.ok( jQuery.active === 0, "ajax active counter should be zero: " + jQuery.active );
+	} );
 
-		jQuery.ajax( url("data/json.php") , {
-			beforeSend: function( xhr ) {
-				xhr.overrideMimeType( "application/json" );
-			},
-			success: function( json ) {
-				ok( json.data , "Mimetype overriden using beforeSend" );
-			}
-		}),
-
-		jQuery.ajax( url("data/json.php") , {
-			mimeType: "application/json",
-			success: function( json ) {
-				ok( json.data , "Mimetype overriden using mimeType option" );
-			}
-		})
-
-	).always(function() {
-		start();
-	});
-
-});
-
-test("jQuery.ajax - abort in prefilter", function() {
-
-	expect( 1 );
-
-	jQuery.ajaxPrefilter(function( options, _, jqXHR ) {
-		if ( options.abortInPrefilter ) {
-			jqXHR.abort();
-		}
-	});
-
-	strictEqual( jQuery.ajax({
-		abortInPrefilter: true,
-		error: function() {
-			ok( false, "error callback called" );
-		}
-	}), false, "Request was properly aborted early by the prefilter" );
-
-});
-
-test( "jQuery.ajax - loading binary data shouldn't throw an exception in IE (#11426)", 1, function() {
-	stop();
-	jQuery.ajax( url( "data/1x1.jpg" ), {
-		success: function( data ) {
-			ok( data === undefined || /JFIF/.test( data ) , "success callback reached" );
-			start();
-		},
-		error: function( _, __, error ) {
-			ok( false, "exception thrown: '" + error + "'" );
-			start();
-		}
-	});
-});
-
-test( "jQuery.domManip - no side effect because of ajaxSetup or global events (#11264)", function() {
-	expect( 1 );
-
-	jQuery.ajaxSetup({
-		type: "POST"
-	});
-
-	jQuery( document ).bind( "ajaxStart ajaxStop", function() {
-		ok( false, "Global event triggered" );
-	});
-
-	jQuery( "#qunit-fixture" ).append( "<script src='data/evalScript.php'></script>" );
-
-	jQuery( document ).unbind( "ajaxStart ajaxStop" );
-
-	jQuery.ajaxSetup({
-		type: "GET"
-	});
-});
-
-test("jQuery.ajax - active counter", function() {
-    ok( jQuery.active == 0, "ajax active counter should be zero: " + jQuery.active );
-});
-
-}
+} )();
